@@ -1,0 +1,52 @@
+{
+  "name": "academic-research-suite",
+  "adapter_version": "0.1.0",
+  "generated_for": "grok-build",
+  "generated_date": "2026-08-24",
+  "minimum_tested_grok_version": "1.0.5",
+  "source_repositories": [
+    {
+      "name": "academic-research-skills",
+      "url": "https://github.com/Imbad0202/academic-research-skills.git",
+      "commit": "2b639c12ee4e7c694a32336cc59dc2616e0d89fe",
+      "suite_version": "3.21.0"
+    },
+    {
+      "name": "experiment-agent",
+      "url": "https://github.com/Imbad0202/experiment-agent.git",
+      "commit": "e291e7dc7ca268b2de7e1a9cf23bc2eef5dc0651",
+      "component_version": "1.1.0"
+    }
+  ],
+  "source_overlay": {
+    "derived_from": "ARS-Codex adapter 0.1.26 vendored tree",
+    "workflow_entrypoint_transform": "nested SKILL.md files are named WORKFLOW.md so only the root router registers",
+    "vendored_file_count": 2252,
+    "vendored_tree_sha256": "e7373a14861864ca60aea6c9608d4c06133687a012b4cbbf49e0a6bcfe12a98e"
+  },
+  "packaging": {
+    "type": "single_grok_suite_skill",
+    "entrypoint": "SKILL.md",
+    "vendored_root": "ars",
+    "runtime_adapter_root": "grok",
+    "command_source": "grok/commands"
+  },
+  "runtime_defaults": {
+    "execution_mode": "inline",
+    "subagents_enabled_by_default": false,
+    "maximum_subagent_depth": 1,
+    "hooks_installed_by_default": false,
+    "cross_model_enabled_by_default": false
+  },
+  "inactive_upstream_surfaces": [
+    "ars/hooks/hooks.json",
+    "ars/scripts/run_codex_audit.sh",
+    "ars/scripts/cross_model_codex_transport.py",
+    "ars/pi"
+  ],
+  "license": "CC-BY-NC-4.0",
+  "license_files": [
+    "LICENSE",
+    "THIRD_PARTY.md"
+  ]
+}
