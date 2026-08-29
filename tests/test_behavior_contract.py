@@ -25,8 +25,8 @@ class 行为案例契约测试(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.案例 = runner.读取案例(案例路径)
 
-    def test_正好包含五个固定案例(self) -> None:
-        self.assertEqual(len(self.案例), 5)
+    def test_正好包含九个固定案例(self) -> None:
+        self.assertEqual(len(self.案例), 9)
         self.assertEqual(
             [案例["id"] for 案例 in self.案例],
             [
@@ -35,6 +35,10 @@ class 行为案例契约测试(unittest.TestCase):
                 "reviewer-read-only",
                 "full-pipeline-checkpoint",
                 "private-material-no-upload",
+                "native-deep-research-route",
+                "native-academic-paper-route",
+                "native-paper-reviewer-route",
+                "native-academic-pipeline-route",
             ],
         )
 
@@ -49,7 +53,7 @@ class 行为案例契约测试(unittest.TestCase):
                 self.assertTrue(案例["required"])
                 self.assertTrue(案例["forbidden"])
 
-    def test_五个边界分别有正向和反向断言(self) -> None:
+    def test_九个边界分别有正向和反向断言(self) -> None:
         期望标记 = {
             "vague-topic-socratic": ("ROUTE=SOCRATIC", "OUTLINE_GENERATED=NO"),
             "metadata-only-citation": (
@@ -64,6 +68,22 @@ class 行为案例契约测试(unittest.TestCase):
             "private-material-no-upload": (
                 "PRIVATE_MATERIAL_CONSENT=ABSENT",
                 "MATERIAL_TRANSMITTED=NO",
+            ),
+            "native-deep-research-route": (
+                "NATIVE_SKILL=ARS_DEEP_RESEARCH",
+                "WORKFLOW=DEEP_RESEARCH",
+            ),
+            "native-academic-paper-route": (
+                "NATIVE_SKILL=ARS_ACADEMIC_PAPER",
+                "WORKFLOW=ACADEMIC_PAPER",
+            ),
+            "native-paper-reviewer-route": (
+                "NATIVE_SKILL=ARS_PAPER_REVIEWER",
+                "WORKFLOW=ACADEMIC_PAPER_REVIEWER",
+            ),
+            "native-academic-pipeline-route": (
+                "NATIVE_SKILL=ARS_ACADEMIC_PIPELINE",
+                "WORKFLOW=ACADEMIC_PIPELINE",
             ),
         }
         for 案例 in self.案例:
@@ -82,7 +102,7 @@ class 行为案例契约测试(unittest.TestCase):
 
     def test_案例定义拒绝不安全的数量或命令合同(self) -> None:
         原文 = json.loads(案例路径.read_text(encoding="utf-8"))
-        原文["cases"] = 原文["cases"][:4]
+        原文["cases"] = 原文["cases"][:8]
         with tempfile.TemporaryDirectory() as 临时目录:
             临时路径 = Path(临时目录) / "cases.json"
             临时路径.write_text(json.dumps(原文, ensure_ascii=False), encoding="utf-8")

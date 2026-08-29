@@ -16,7 +16,7 @@ from scripts.build_runtime_package import (
     collect_files,
     directory_summary,
 )
-from scripts.install_grok_skill import validate_package
+from scripts.install_grok_skill import install_skill, validate_package
 
 
 仓库根目录 = Path(__file__).resolve().parents[1]
@@ -130,6 +130,21 @@ class RuntimePackageTest(unittest.TestCase):
                 self.assertIn(required, names)
             self.assertIn("grok/runtime-mapping.md", names)
             self.assertIn("grok/full-runtime-manifest.json", names)
+            for skill_name in (
+                "ars-deep-research",
+                "ars-academic-paper",
+                "ars-paper-reviewer",
+                "ars-academic-pipeline",
+            ):
+                self.assertIn(f"grok/skills/{skill_name}/SKILL.md", names)
+            for agent_name in (
+                "ars-research-architect",
+                "ars-synthesis",
+                "ars-report-compiler",
+            ):
+                self.assertIn(f"grok/agents/{agent_name}.md", names)
+            self.assertIn("grok/hooks/pre_tool_use.py", names)
+            self.assertIn("grok/hooks/ars-academic-research-suite.json", names)
             for required in (
                 "ars/LICENSE",
                 "ars/NOTICE.md",
@@ -285,6 +300,15 @@ class RuntimePackageTest(unittest.TestCase):
             with tarfile.open(archive_path, mode="r:gz") as archive:
                 archive.extractall(extracted, filter="data")
             self.assertEqual([], validate_package(extracted))
+            target = Path(temporary_directory) / "grok"
+            install_skill(target_root=target, source_dir=extracted, keep_backups=1)
+            self.assertEqual(
+                3,
+                len(list((target / "agents").glob("ars-*.md"))),
+            )
+            self.assertFalse(
+                (target / "hooks" / "ars-academic-research-suite.json").exists()
+            )
 
     def test_默认输出文件名使用_runtime_core(self) -> None:
         output = _默认输出路径(源目录, "tar.gz")

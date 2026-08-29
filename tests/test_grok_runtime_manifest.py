@@ -33,12 +33,29 @@ class GrokRuntimeManifestTest(unittest.TestCase):
         self.assertFalse(self.清单["runtime_constraints"]["automatic_parallel_dispatch"])
 
     def test运行模式和子agent深度(self):
-        self.assertEqual(set(self.清单["modes"]), {"inline", "parallel"})
+        self.assertEqual(set(self.清单["modes"]), {"inline", "native-phase", "parallel"})
         self.assertEqual(self.清单["runtime_constraints"]["max_subagent_depth"], 1)
         self.assertEqual(self.清单["subagent_policy"]["max_depth"], 1)
         self.assertEqual(self.清单["modes"]["parallel"]["max_subagent_depth"], 1)
         self.assertTrue(self.清单["runtime_constraints"]["parent_only_spawning"])
         self.assertTrue(self.清单["subagent_policy"]["parent_only_spawning"])
+
+    def test_原生阶段Agent仅用于完整流水线且不并行(self):
+        模式 = self.清单["modes"]["native-phase"]
+        self.assertEqual(
+            模式["enabled_by_default_for"],
+            ["ars-full", "ars-academic-pipeline"],
+        )
+        self.assertFalse(模式["parallel"])
+        self.assertEqual(模式["max_subagent_depth"], 1)
+        self.assertEqual(
+            set(模式["allowed_agent_types"]),
+            {
+                "ars-research-architect",
+                "ars-synthesis",
+                "ars-report-compiler",
+            },
+        )
 
     def test关键工具映射(self):
         期望映射 = {

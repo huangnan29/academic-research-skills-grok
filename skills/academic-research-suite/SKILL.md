@@ -15,7 +15,7 @@ disable-model-invocation: false
 license: CC-BY-NC-4.0
 metadata:
   author: ARS contributors and Grok adapter contributors
-  version: "0.2.1"
+  version: "0.3.0"
   upstream-suite: "academic-research-skills@127ff85e"
   short-description: Grok Build 学术研究、论文与审稿工作流
 ---
@@ -83,9 +83,11 @@ Grok 安装器会把 `grok/commands/` 中的包装文件注册到 `~/.grok/comma
 
 需要执行工具、子 agent、命令或 Hook 行为时，完整读取 `grok/runtime-mapping.md`。
 
-默认采用单会话内联执行：读取被引用的角色文件，将其视为当前阶段的角色提示和输入输出契约，在当前会话完成阶段交付物。
+普通单功能请求默认在当前会话内联执行。安装包同时提供四个命名空间化原生入口：`ars-deep-research`、`ars-academic-paper`、`ars-paper-reviewer`、`ars-academic-pipeline`；它们只负责更精确的发现和路由，上游正文仍以 `ars/*/WORKFLOW.md` 为唯一来源。
 
-只有用户明确要求“并行”“委派”“多 agent”“完整运行时”，才读取 `grok/full-runtime-manifest.json` 并启用 `spawn_subagent`。Grok Build 子 agent 最大深度为一层，子 agent 不得继续创建子 agent。
+用户显式调用 `ars-full` 或 `ars-academic-pipeline` 时，若三个原生 Agent 已安装，可以按流水线阶段顺序调用：Phase 1 使用 `ars-research-architect`，Phase 3 使用 `ars-synthesis`，Phase 4 或 Phase 6 使用 `ars-report-compiler`。这三类调用属于完整流水线内部的顺序阶段执行，不等于开启并行团队；Agent 缺失时回退为内联角色提示并披露回退。
+
+除上述三个受限阶段 Agent 外，只有用户明确要求“并行”“委派”“多 agent”“完整运行时”，才读取 `grok/full-runtime-manifest.json` 并启用其他 `spawn_subagent` 调度。Grok Build 子 agent 最大深度为一层，子 agent 不得继续创建子 agent。
 
 多审稿席位需要独立产出各自意见，再由综合角色汇总。综合结论不得删除魔鬼代言人、方法审查或伦理审查中的关键异议。
 
@@ -151,7 +153,7 @@ Hook 失败采用 Grok 的 fail-open 语义，因此 Hook 只能提供提醒或�
 - `ars/scripts/cross_model_codex_transport.py`；
 - `ars/pi/`。
 
-若用户明确要求移植 Hook，必须先单独审查事件名、工具名、fail-open 行为和副作用，不得直接把上游 Hook 当成 Grok 完整性门。
+安装包提供默认关闭的 Grok `PreToolUse` 本地范围守卫，只有安装器显式传入 `--enable-hooks` 才写入；`--disable-hooks` 只移除本包托管配置。Hook 不联网，失败时 fail-open，也不能成为完整性证明。
 
 ## 十、输出默认值
 

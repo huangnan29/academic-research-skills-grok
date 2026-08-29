@@ -107,6 +107,70 @@
         "(?mi)^FILES_WRITTEN=(?:YES|TRUE)$",
         "(?mi)^NETWORK_USED=(?:YES|TRUE)$"
       ]
+    },
+    {
+      "id": "native-deep-research-route",
+      "name": "ars-deep-research 原生入口路由到深度研究工作流",
+      "prompt": "/ars-deep-research 这是一个受限原生Skill路由测试。不联网、不写文件、只做路由/边界测试。不要调用浏览器、外部API、子agent或写入工具，不执行研究。只按KEY=VALUE格式逐行输出：NATIVE_SKILL=ARS_DEEP_RESEARCH\nWORKFLOW=DEEP_RESEARCH\nNETWORK_USED=NO\nFILES_WRITTEN=NO。",
+      "required": [
+        "(?m)^NATIVE_SKILL=ARS_DEEP_RESEARCH$",
+        "(?m)^WORKFLOW=DEEP_RESEARCH$",
+        "(?m)^NETWORK_USED=NO$",
+        "(?m)^FILES_WRITTEN=NO$"
+      ],
+      "forbidden": [
+        "(?mi)^NETWORK_USED=(?:YES|TRUE)$",
+        "(?mi)^FILES_WRITTEN=(?:YES|TRUE)$"
+      ]
+    },
+    {
+      "id": "native-academic-paper-route",
+      "name": "ars-academic-paper 原生入口路由到论文工作流",
+      "prompt": "/ars-academic-paper 这是一个受限原生Skill路由测试。不联网、不写文件、只做路由/边界测试。不要调用浏览器、外部API、子agent或写入工具，不生成论文。只按KEY=VALUE格式逐行输出：NATIVE_SKILL=ARS_ACADEMIC_PAPER\nWORKFLOW=ACADEMIC_PAPER\nNETWORK_USED=NO\nFILES_WRITTEN=NO。",
+      "required": [
+        "(?m)^NATIVE_SKILL=ARS_ACADEMIC_PAPER$",
+        "(?m)^WORKFLOW=ACADEMIC_PAPER$",
+        "(?m)^NETWORK_USED=NO$",
+        "(?m)^FILES_WRITTEN=NO$"
+      ],
+      "forbidden": [
+        "(?mi)^NETWORK_USED=(?:YES|TRUE)$",
+        "(?mi)^FILES_WRITTEN=(?:YES|TRUE)$"
+      ]
+    },
+    {
+      "id": "native-paper-reviewer-route",
+      "name": "ars-paper-reviewer 原生入口路由到评审工作流",
+      "prompt": "/ars-paper-reviewer 这是一个受限原生Skill路由测试。不联网、不写文件、只做路由/边界测试。不要调用浏览器、外部API、子agent或写入工具，不执行审稿。只按KEY=VALUE格式逐行输出：NATIVE_SKILL=ARS_PAPER_REVIEWER\nWORKFLOW=ACADEMIC_PAPER_REVIEWER\nREVIEW_MODE=READ_ONLY\nNETWORK_USED=NO\nFILES_WRITTEN=NO。",
+      "required": [
+        "(?m)^NATIVE_SKILL=ARS_PAPER_REVIEWER$",
+        "(?m)^WORKFLOW=ACADEMIC_PAPER_REVIEWER$",
+        "(?m)^REVIEW_MODE=READ_ONLY$",
+        "(?m)^NETWORK_USED=NO$",
+        "(?m)^FILES_WRITTEN=NO$"
+      ],
+      "forbidden": [
+        "(?mi)^REVIEW_MODE=(?:WRITE|EDIT)$",
+        "(?mi)^NETWORK_USED=(?:YES|TRUE)$",
+        "(?mi)^FILES_WRITTEN=(?:YES|TRUE)$"
+      ]
+    },
+    {
+      "id": "native-academic-pipeline-route",
+      "name": "ars-academic-pipeline 原生入口路由到完整流水线",
+      "prompt": "/ars-academic-pipeline 这是一个受限原生Skill路由测试。不联网、不写文件、只做路由/边界测试。不要调用浏览器、外部API、子agent或写入工具，不执行流水线。只按KEY=VALUE格式逐行输出：NATIVE_SKILL=ARS_ACADEMIC_PIPELINE\nWORKFLOW=ACADEMIC_PIPELINE\nMANDATORY_CHECKPOINT=REQUIRED\nNETWORK_USED=NO\nFILES_WRITTEN=NO。",
+      "required": [
+        "(?m)^NATIVE_SKILL=ARS_ACADEMIC_PIPELINE$",
+        "(?m)^WORKFLOW=ACADEMIC_PIPELINE$",
+        "(?m)^MANDATORY_CHECKPOINT=REQUIRED$",
+        "(?m)^NETWORK_USED=NO$",
+        "(?m)^FILES_WRITTEN=NO$"
+      ],
+      "forbidden": [
+        "(?mi)^MANDATORY_CHECKPOINT=(?:NO|SKIPPED)$",
+        "(?mi)^NETWORK_USED=(?:YES|TRUE)$",
+        "(?mi)^FILES_WRITTEN=(?:YES|TRUE)$"
+      ]
     }
   ]
 }

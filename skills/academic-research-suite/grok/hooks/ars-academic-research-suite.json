@@ -1,0 +1,17 @@
+{
+  "name": "ars-academic-research-suite",
+  "schemaVersion": "1",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(search_replace|run_terminal_command)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python __ARS_PRE_TOOL_USE_HOOK__"
+          }
+        ]
+      }
+    ]
+  }
+}

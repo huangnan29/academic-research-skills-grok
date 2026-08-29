@@ -17,6 +17,7 @@
     "default_mode": "inline",
     "available_modes": [
       "inline",
+      "native-phase",
       "parallel"
     ],
     "max_subagent_depth": 1,
@@ -29,6 +30,20 @@
       "execution_surface": "current_session",
       "spawn_subagent": false,
       "description": "当前会话读取工作流入口和所需角色提示词，按阶段顺序执行"
+    },
+    "native-phase": {
+      "enabled_by_default_for": ["ars-full", "ars-academic-pipeline"],
+      "execution_surface": "spawn_subagent",
+      "spawn_subagent": true,
+      "parallel": false,
+      "max_subagent_depth": 1,
+      "allowed_agent_types": [
+        "ars-research-architect",
+        "ars-synthesis",
+        "ars-report-compiler"
+      ],
+      "fallback": "inline_with_disclosure",
+      "description": "完整流水线按Phase 1、3、4/6顺序调用三个受限原生Agent"
     },
     "parallel": {
       "enabled_by_default": false,
@@ -353,7 +368,9 @@
     "global_hooks_always_trusted": true,
     "failure_behavior": "fail-open，除非 Hook 明确返回 deny 或 block",
     "integrity_gate_policy": "Hook 不能替代 ARS 的引用、证据、人工确认或学术诚信闸门",
-    "input_convention": "Grok Hook 输入使用 camelCase 字段和真实工具名"
+    "input_convention": "Grok Hook 输入使用 camelCase 字段和真实工具名",
+    "installed_by_adapter": ["PreToolUse"],
+    "session_start_announcement": "unavailable_in_grok_1.0.5_stdout_ignored"
   },
   "confirmation_gates": {
     "enable_full_runtime": {

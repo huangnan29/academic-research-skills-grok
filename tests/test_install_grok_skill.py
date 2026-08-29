@@ -11,7 +11,9 @@ import tempfile
 import unittest
 
 from scripts.install_grok_skill import (
+    EXPECTED_AGENTS,
     EXPECTED_COMMANDS,
+    HOOK_CONFIG_NAME,
     SOURCE_DIR,
     ValidationError,
     install_skill,
@@ -58,7 +60,106 @@ class InstallGrokSkillTest(unittest.TestCase):
                 sorted(path.name for path in (target_root / "commands").glob("*.md")),
                 sorted(EXPECTED_COMMANDS),
             )
+            self.assertEqual(
+                sorted(path.name for path in (target_root / "agents").glob("*.md")),
+                sorted(EXPECTED_AGENTS),
+            )
+            self.assertFalse((target_root / "hooks" / HOOK_CONFIG_NAME).exists())
             self.assertIn("安装成功", output.getvalue())
+
+    def test_enable_hooks_renders_local_paths_and_no_http(self) -> None:
+        """--enable-hooks 应渲染本地脚本路径，并禁止网络 Hook。"""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            target_root = Path(temporary_directory) / "grok with spaces"
+            self.assertEqual(
+                main(["--target-root", str(target_root), "--enable-hooks"]),
+                0,
+            )
+            hook_path = target_root / "hooks" / HOOK_CONFIG_NAME
+            self.assertTrue(hook_path.is_file())
+            hook_text = hook_path.read_text(encoding="utf-8")
+            self.assertNotIn("__ARS_", hook_text)
+            self.assertNotIn("http://", hook_text.lower())
+            self.assertNotIn("https://", hook_text.lower())
+            hook = json.loads(hook_text)
+            self.assertEqual(set(hook["hooks"]), {"PreToolUse"})
+            self.assertNotIn("SessionStart", hook["hooks"])
+            self.assertEqual(
+                hook["hooks"]["PreToolUse"][0]["matcher"],
+                "^(search_replace|run_terminal_command)$",
+            )
+            pre_tool_command = hook["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+            self.assertIn("pre_tool_use.py", pre_tool_command)
+            self.assertIn("grok with spaces", pre_tool_command)
+            self.assertEqual(
+                hook["hooks"]["PreToolUse"][0]["hooks"][0]["type"],
+                "command",
+            )
+
+    def test_enable_hooks_is_idempotent(self) -> None:
+        """相同安装再次显式启用 Hook 不得创建备份。"""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            target_root = Path(temporary_directory) / "grok"
+            self.assertEqual(main(["--target-root", str(target_root), "--enable-hooks"]), 0)
+            self.assertEqual(main(["--target-root", str(target_root), "--enable-hooks"]), 0)
+            self.assertFalse((target_root / "backups").exists())
+
+    def test_enable_hooks_backs_up_existing_managed_file(self) -> None:
+        """替换同名托管 Hook 前应先保存旧配置。"""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            target_root = Path(temporary_directory) / "grok"
+            self.assertEqual(main(["--target-root", str(target_root)]), 0)
+            hook_path = target_root / "hooks" / HOOK_CONFIG_NAME
+            hook_path.parent.mkdir(parents=True, exist_ok=True)
+            old_hook = '{"custom":true}\n'
+            hook_path.write_text(old_hook, encoding="utf-8")
+            self.assertEqual(
+                main(["--target-root", str(target_root), "--enable-hooks"]),
+                0,
+            )
+            backups = sorted(
+                path for path in (target_root / "backups").iterdir() if path.is_dir()
+            )
+            self.assertEqual(len(backups), 1)
+            self.assertEqual(
+                (
+                    backups[0] / "hooks" / HOOK_CONFIG_NAME
+                ).read_text(encoding="utf-8"),
+                old_hook,
+            )
+
+    def test_disable_hooks_only_removes_managed_file(self) -> None:
+        """--disable-hooks 只移除 ARS 托管文件，其他 Hook 和技能保持不变。"""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            target_root = Path(temporary_directory) / "grok"
+            self.assertEqual(main(["--target-root", str(target_root), "--enable-hooks"]), 0)
+            other_hook = target_root / "hooks" / "other.json"
+            other_hook.write_text('{"keep":true}\n', encoding="utf-8")
+            skill_version = target_root / "skills" / "academic-research-suite" / "VERSION"
+            before = skill_version.read_text(encoding="utf-8")
+            self.assertEqual(main(["--target-root", str(target_root), "--disable-hooks"]), 0)
+            self.assertFalse((target_root / "hooks" / HOOK_CONFIG_NAME).exists())
+            self.assertEqual(other_hook.read_text(encoding="utf-8"), '{"keep":true}\n')
+            self.assertEqual(skill_version.read_text(encoding="utf-8"), before)
+
+    def test_enable_and_disable_flags_are_mutually_exclusive(self) -> None:
+        """启用和禁用参数不得同时接受。"""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit):
+                    main(
+                        [
+                            "--target-root",
+                            str(Path(temporary_directory) / "grok"),
+                            "--enable-hooks",
+                            "--disable-hooks",
+                        ]
+                    )
 
     def test_second_install_creates_timestamped_backup(self) -> None:
         """二次安装应先备份旧技能和命令，再替换为新内容。"""

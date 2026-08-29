@@ -1,5 +1,15 @@
 # 更新记录
 
+## 0.3.0 — 2026-08-29
+
+- 增加四个命名空间化Grok原生Skill入口；
+- 增加Claude原版对应的三个Grok原生Agent；
+- 增加默认关闭、显式安装的PreToolUse本地写入范围Hook；
+- 记录Grok 1.0.5忽略SessionStart stdout的能力缺口，不交付无效公告Hook；
+- 为十三个轻任务命令配置`effort: medium`，三个重任务继续继承当前设置；
+- 安装器纳入Agent和可选Hook的备份、幂等与一致性验证；
+- 保持上游ARS 3.21.1、跨模型默认关闭和私有材料不外传边界。
+
 ## 0.2.1 — 2026-08-29
 
 - 将 Release 附件从 `runtime-minimal` 更名为语义更准确的 `runtime-core`；

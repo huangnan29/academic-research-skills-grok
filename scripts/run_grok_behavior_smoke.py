@@ -21,7 +21,7 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 仓库根目录 = Path(__file__).resolve().parents[1]
 默认案例路径 = 仓库根目录 / "tests" / "behavior_cases.json"
 默认超时秒数 = 60.0
-案例数量 = 5
+案例数量 = 9
 
 
 class 行为契约错误(ValueError):
@@ -108,7 +108,7 @@ def 验证案例定义(case: Mapping[str, Any]) -> None:
 
 
 def 读取案例(path: Path | str = 默认案例路径) -> list[dict[str, Any]]:
-    """读取并验证五个行为案例，不读取任何用户研究材料。"""
+    """读取并验证九个行为案例，不读取任何用户研究材料。"""
 
     案例文件 = Path(path)
     try:

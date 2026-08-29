@@ -1,6 +1,6 @@
 {
   "name": "academic-research-suite",
-  "adapter_version": "0.2.1",
+  "adapter_version": "0.3.0",
   "generated_for": "grok-build",
   "generated_date": "2026-08-29",
   "minimum_tested_grok_version": "1.0.5",
@@ -43,10 +43,14 @@
     "vendored_root": "ars",
     "runtime_adapter_root": "grok",
     "command_source": "grok/commands",
+    "native_skill_source": "grok/skills",
+    "native_agent_source": "grok/agents",
+    "optional_hook_source": "grok/hooks",
     "runtime_core_supported": true
   },
   "runtime_defaults": {
     "execution_mode": "inline",
+    "native_phase_agents_enabled_for_full_pipeline": true,
     "subagents_enabled_by_default": false,
     "maximum_subagent_depth": 1,
     "hooks_installed_by_default": false,

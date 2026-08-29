@@ -6,7 +6,7 @@
 
 ## 当前版本
 
-- Grok 适配器：`0.2.1`
+- Grok 适配器：`0.3.0`
 - ARS 套件：`3.21.1`
 - 已测试 Grok Build：`1.0.5`
 - 上游 ARS 标签：`v3.21.1`
@@ -22,6 +22,9 @@
 - 分阶段 `ars-full` 研究到论文流水线；
 - 实验规划、统计解释和可重复性检查；
 - Grok Build 原生技能发现和 16 个 Slash Commands。
+- 四个命名空间化原生 Skill 入口和三个受限原生 Agent；
+- 默认关闭、显式启用的本地 PreToolUse 写入范围守卫；
+- 十三个轻任务命令使用中等推理强度，三个重任务继承当前设置。
 
 ## 安装
 
@@ -47,7 +50,21 @@ grok inspect --json
 ~/.grok/commands/ars-*.md
 ```
 
-已有安装会先备份到 `~/.grok/backups/`，再进行原子替换。源包与已安装内容完全一致时不重复安装，也不会生成无意义备份。`--keep-backups 0` 可以在安装成功后不保留历史备份。
+安装器默认安装根 Skill、四个原生 Skill、16 个命令和三个原生 Agent；Hook 默认不安装。已有安装会先备份到 `~/.grok/backups/`，再进行原子替换。源包与已安装内容完全一致时不重复安装，也不会生成无意义备份。`--keep-backups 0` 可以在安装成功后不保留历史备份。
+
+显式启用本地写入范围守卫：
+
+```bash
+uv run python scripts/install_grok_skill.py --target-root ~/.grok --enable-hooks
+```
+
+只禁用本包托管的 Hook，不影响技能、Agent或其他Hook：
+
+```bash
+uv run python scripts/install_grok_skill.py --target-root ~/.grok --disable-hooks
+```
+
+当前Grok会忽略SessionStart Hook的stdout，无法像Claude一样注入会话公告；本包不会安装无效的公告Hook。PreToolUse守卫仅本地运行、不使用HTTP，失败时fail-open，也不替代正常权限系统。
 
 更新时在仓库中执行：
 
@@ -68,7 +85,7 @@ uv run python scripts/build_runtime_package.py
 输出：
 
 ```text
-dist/academic-research-suite-0.2.1-runtime-core.tar.gz
+dist/academic-research-suite-0.3.0-runtime-core.tar.gz
 ```
 
 核心包保留五个工作流、角色、参考资料、模板、共享契约、非测试运行脚本和 16 个命令；排除上游测试脚本、测试目录、评测、审计、设计文档和开发资料。包内清单标记为 `runtime-core`，使用独立文件数量与 SHA-256，安装器会在写入前验证。完整审计与测试材料仍保留在 GitHub 源仓库中。
@@ -77,6 +94,10 @@ dist/academic-research-suite-0.2.1-runtime-core.tar.gz
 
 ```text
 /academic-research-suite
+/ars-deep-research
+/ars-academic-paper
+/ars-paper-reviewer
+/ars-academic-pipeline
 /ars-plan
 /ars-outline
 /ars-lit-review
@@ -86,6 +107,14 @@ dist/academic-research-suite-0.2.1-runtime-core.tar.gz
 ```
 
 自然语言提出研究、论文或审稿请求时，Grok Build 也可以根据技能描述自动触发。
+
+完整流水线可以顺序调用三个受限原生Agent：
+
+- `ars-research-architect`：Phase 1方法蓝图；
+- `ars-synthesis`：Phase 3证据综合；
+- `ars-report-compiler`：Phase 4或Phase 6报告编译。
+
+三个Agent只允许读取、检索和结构化写入，不允许终端、联网、MCP或递归子Agent。其他上游角色继续按Claude原版默认方式作为WORKFLOW内提示词执行。
 
 ## 安全边界
 
