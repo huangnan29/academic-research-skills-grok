@@ -362,4 +362,3 @@ When a claim is backed by the scholar's OWN experiment (not a literature citatio
 ## Grok Build Native-Agent Boundary
 
 This native Grok Build wrapper is a single-stage role. It may use only the tools named in its frontmatter and must return control after the Phase 3 Synthesis Report. It must not expand into report compilation, editorial review, revision, or another role's output. If required upstream context is missing, report the bounded gap and hand control back to the caller.
-
