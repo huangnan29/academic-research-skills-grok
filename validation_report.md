@@ -54,11 +54,11 @@ Grok 1.0.5会忽略SessionStart被动Hook的stdout，无法移植Claude会话公
 - vendored ARS：2,284个文件；
 - vendored tree SHA-256：`b3d74eb1fd79e801cf0b01f38bee954afa5d70f78b58942ac720f07373161e94`；
 - 完整技能：2,316个文件；
-- 完整技能摘要：`740cbf75fa9b08cabd70bd3a6caadd0aa5c8812da8c4ebeb06fdc1d5d382ba50`；
+- 完整技能摘要：`4b7d84918fc442151235768221c4913b011d56166efa754eb4392f4d5830a221`；
 - 项目源与全局安装摘要一致；
 - runtime-core：`academic-research-suite-0.3.0-runtime-core.tar.gz`；
-- runtime-core大小：3,124,718字节；
-- runtime-core SHA-256：`4ba3fcc0ebc9d827cd3ef59958cbc988f394e73fe62f401ce20faf5f78324463`；
+- runtime-core大小：3,124,715字节；
+- runtime-core SHA-256：`686434ecdb60eee734e001a5535f1725d25a3b0b18ef563f0a3d7f2beb5ef8ef`；
 - runtime-core文件：827个，其中core `ars/` 795个；
 - scripts测试文件残留：0；
 - runtime-core包含4个Skill、3个Agent、16个命令和Hook源文件；
@@ -99,3 +99,12 @@ Grok 1.0.5会忽略SessionStart被动Hook的stdout，无法移植Claude会话公
 - 私有材料外传默认关闭；
 - 付费服务和凭证调用默认关闭；
 - 其他三十九个上游角色继续内联，不注册为额外Agent。
+
+## 公开持续集成
+
+- 运行：[GitHub Actions 33272111427](https://github.com/huangnan29/academic-research-skills-grok/actions/runs/33272111427)；
+- 提交：`cfe8053f4e4ba47342ca8d0503145122d1eceaca`；
+- 静态验证：PASS；
+- 70项单元测试：PASS；
+- 凭证扫描：PASS；
+- 50MiB大文件门：PASS。

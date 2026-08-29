@@ -66,7 +66,7 @@
 - [x] 三个 Agent 发现和权限测试通过；
 - [x] PreToolUse Hook 允许、拒绝和 fail-open 测试通过；
 - [x] 凭证扫描和 50MiB 大文件门通过；
-- [ ] 公开 GitHub CI 通过；
+- [x] 公开 GitHub CI 通过；
 - [ ] `v0.3.0` 标签、main、Release 资产摘要一致。
 
 ## 明确不做
