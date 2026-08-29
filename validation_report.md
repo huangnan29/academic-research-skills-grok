@@ -2,7 +2,7 @@
 
 ## 验收结论
 
-ARS-Grok Build 适配器 `0.2.0` 已完成本地结构验证、43 项单元测试、上游关键契约检查、完整包与轻量包安装、Grok Build 注册检查和五项真实受限行为测试。本地状态为 `PASS`；公开 GitHub CI 与 Release 状态在发布阶段核验。
+ARS-Grok Build 适配器 `0.2.0` 已完成本地结构验证、43 项单元测试、上游关键契约检查、完整包与轻量包安装、Grok Build 注册检查、五项真实受限行为测试和公开 GitHub CI。当前状态为 `PASS`。
 
 ## 来源与范围
 
@@ -72,6 +72,17 @@ ARS-Grok Build 适配器 `0.2.0` 已完成本地结构验证、43 项单元测�
 | Reviewer 模式只读、不修改稿件 | PASS |
 | `ars-full` 保留强制检查点，不自动最终化 | PASS |
 | 无同意时私有材料不得外传 | PASS |
+
+## 公开持续集成
+
+- 工作流：`.github/workflows/ci.yml`；
+- 运行：[GitHub Actions 33243764234](https://github.com/huangnan29/academic-research-skills-grok/actions/runs/33243764234)；
+- 提交：`1f9b87dafd380d3f6975e69ef02282acf9b9d71c`；
+- 结构验证：PASS；
+- 43 项单元测试：PASS；
+- 凭证模式扫描：PASS；
+- 50MiB 大文件门：PASS；
+- Node 24 Actions：PASS，无弃用警告。
 
 ## 默认关闭能力
 
