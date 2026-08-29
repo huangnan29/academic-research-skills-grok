@@ -6,7 +6,7 @@
 
 ## 当前版本
 
-- Grok 适配器：`0.2.0`
+- Grok 适配器：`0.2.1`
 - ARS 套件：`3.21.1`
 - 已测试 Grok Build：`1.0.5`
 - 上游 ARS 标签：`v3.21.1`
@@ -57,9 +57,9 @@ uv run python scripts/install_grok_skill.py --check
 uv run python scripts/install_grok_skill.py --target-root ~/.grok --keep-backups 3
 ```
 
-## 轻量运行包
+## 核心运行包
 
-完整仓库保留上游测试、评测、审计和设计材料。只需要运行 Skill 时，可以构建确定性的轻量包：
+完整仓库保留上游测试、评测、审计和设计材料。只需要运行 Skill 时，可以构建确定性的核心包：
 
 ```bash
 uv run python scripts/build_runtime_package.py
@@ -68,10 +68,10 @@ uv run python scripts/build_runtime_package.py
 输出：
 
 ```text
-dist/academic-research-suite-0.2.0-runtime-minimal.tar.gz
+dist/academic-research-suite-0.2.1-runtime-core.tar.gz
 ```
 
-轻量包保留五个工作流、角色、参考资料、模板、共享契约、运行脚本和 16 个命令；排除上游测试、评测、审计、设计文档和开发工具。包内清单使用独立文件数量与 SHA-256，安装器会在写入前验证。
+核心包保留五个工作流、角色、参考资料、模板、共享契约、非测试运行脚本和 16 个命令；排除上游测试脚本、测试目录、评测、审计、设计文档和开发资料。包内清单标记为 `runtime-core`，使用独立文件数量与 SHA-256，安装器会在写入前验证。完整审计与测试材料仍保留在 GitHub 源仓库中。
 
 ## 使用
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""确定性构建 ARS-Grok Build 的 runtime-minimal 运行包。
+"""确定性构建 ARS-Grok Build 的 runtime-core 运行包。
 
-默认生成 ``dist/academic-research-suite-<VERSION>-runtime-minimal.tar.gz``。
+默认生成 ``dist/academic-research-suite-<VERSION>-runtime-core.tar.gz``。
 脚本只使用 Python 标准库，包内的 ``manifest.json`` 会记录轻量 ``ars/``
 目录的新文件数和目录摘要。
 """
@@ -36,6 +36,22 @@ from typing import Iterable, Mapping
     "pi",
 }
 排除的_ars_docs_子目录 = {"design", "migration"}
+排除的_ars_顶层文件 = {
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "GOVERNANCE.md",
+    "POSITIONING.md",
+    "QUICKSTART.md",
+    "CITATION.cff",
+    "package.json",
+    "pyproject.toml",
+    "requirements-dev.txt",
+    "uv.lock",
+    ".gitleaks.toml",
+    ".gitleaksignore",
+    ".command-invariants.toml",
+    ".gitattributes",
+}
 
 必需工作流 = (
     "ars/deep-research/WORKFLOW.md",
@@ -59,10 +75,29 @@ def 是否排除(relative_path: PurePosixPath) -> bool:
     if len(parts) >= 2 and parts[0] == "ars":
         if parts[1] in 排除的_ars_子目录:
             return True
+        # 运行目录不携带任何层级的测试目录及测试清单。
+        if "tests" in parts[1:] or relative_path.name == "_ci_pytest_manifest.toml":
+            return True
+        # ars/scripts 中的 test_*.py 是开发测试，不属于运行时脚本。
+        if (
+            parts[1] == "scripts"
+            and relative_path.name.startswith("test_")
+            and relative_path.suffix == ".py"
+        ):
+            return True
         if (
             len(parts) >= 3
             and parts[1] == "docs"
             and parts[2] in 排除的_ars_docs_子目录
+        ):
+            return True
+        # 仅删除 ars 根目录的项目开发文档和构建元数据，保留运行时资料目录中的同名文件。
+        if len(parts) == 2 and (
+            relative_path.name in 排除的_ars_顶层文件
+            or (
+                relative_path.name.startswith("README")
+                and relative_path.suffix == ".md"
+            )
         ):
             return True
     return False
@@ -151,7 +186,7 @@ def _准备清单(
     if not isinstance(packaging, dict):
         packaging = {}
         package_manifest["packaging"] = packaging
-    packaging["variant"] = "runtime-minimal"
+    packaging["variant"] = "runtime-core"
 
     source_overlay = package_manifest.get("source_overlay")
     if not isinstance(source_overlay, dict):
@@ -265,7 +300,7 @@ def 构建运行包(
     source_dir: Path | str = 默认源目录,
     output_path: Path | str | None = None,
 ) -> Path:
-    """从源技能目录构建默认的 runtime-minimal tar.gz。"""
+    """从源技能目录构建默认的 runtime-core tar.gz。"""
 
     source = Path(source_dir)
     files = 收集文件(source)
@@ -282,7 +317,7 @@ def 构建运行包(
         if output_path is not None
         else 仓库根目录
         / "dist"
-        / f"{技能名称}-{version}-runtime-minimal.tar.gz"
+        / f"{技能名称}-{version}-runtime-core.tar.gz"
     )
     return _原子写入归档(destination, entries)
 
@@ -347,7 +382,7 @@ def _默认输出路径(source_dir: Path, output_format: str) -> Path:
     return (
         仓库根目录
         / "dist"
-        / f"{技能名称}-{version}-runtime-minimal{suffix}"
+        / f"{技能名称}-{version}-runtime-core{suffix}"
     )
 
 
@@ -370,7 +405,7 @@ def main(argv: list[str] | None = None) -> int:
         result = 构建运行目录(args.source_dir, output)
     else:
         result = 构建运行包(args.source_dir, output)
-    print(f"runtime-minimal 构建完成：{result}")
+    print(f"runtime-core 构建完成：{result}")
     return 0
 
 

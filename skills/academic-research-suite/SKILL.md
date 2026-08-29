@@ -15,7 +15,7 @@ disable-model-invocation: false
 license: CC-BY-NC-4.0
 metadata:
   author: ARS contributors and Grok adapter contributors
-  version: "0.2.0"
+  version: "0.2.1"
   upstream-suite: "academic-research-skills@127ff85e"
   short-description: Grok Build 学术研究、论文与审稿工作流
 ---

@@ -1,4 +1,4 @@
-"""runtime-minimal 运行包构建器的契约测试。"""
+"""runtime-core 运行包构建器的契约测试。"""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import unittest
 
 from scripts.build_runtime_package import (
     必需工作流,
+    _默认输出路径,
     build_runtime_package,
     collect_files,
     directory_summary,
@@ -66,9 +67,56 @@ class RuntimePackageTest(unittest.TestCase):
                     any(name.startswith(excluded_prefix) for name in names),
                     excluded_prefix,
                 )
+            self.assertFalse(
+                any(
+                    name.startswith("ars/") and "/tests/" in f"/{name}/"
+                    for name in names
+                )
+            )
+            self.assertFalse(
+                any(
+                    name.startswith("ars/scripts/")
+                    and Path(name).name.startswith("test_")
+                    and Path(name).suffix == ".py"
+                    for name in names
+                )
+            )
+            self.assertFalse(
+                any(
+                    Path(name).name == "_ci_pytest_manifest.toml"
+                    for name in names
+                )
+            )
             self.assertFalse(any("__pycache__" in name for name in names))
             self.assertFalse(any(name.endswith(".pyc") for name in names))
             self.assertFalse(any(name.endswith("/.DS_Store") for name in names))
+
+            ars_root = 源目录 / "ars"
+            excluded_top_level = {
+                "CHANGELOG.md",
+                "CONTRIBUTING.md",
+                "GOVERNANCE.md",
+                "POSITIONING.md",
+                "QUICKSTART.md",
+                "CITATION.cff",
+                "package.json",
+                "pyproject.toml",
+                "requirements-dev.txt",
+                "uv.lock",
+                ".gitleaks.toml",
+                ".gitleaksignore",
+                ".command-invariants.toml",
+                ".gitattributes",
+            }
+            excluded_top_level.update(
+                path.name
+                for path in ars_root.iterdir()
+                if path.is_file()
+                and path.name.startswith("README")
+                and path.suffix == ".md"
+            )
+            for filename in excluded_top_level:
+                self.assertNotIn(f"ars/{filename}", names)
 
     def test_保留工作流和运行所需目录(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -82,6 +130,14 @@ class RuntimePackageTest(unittest.TestCase):
                 self.assertIn(required, names)
             self.assertIn("grok/runtime-mapping.md", names)
             self.assertIn("grok/full-runtime-manifest.json", names)
+            for required in (
+                "ars/LICENSE",
+                "ars/NOTICE.md",
+                "ars/THIRD_PARTY.md",
+                "ars/SECURITY.md",
+                "ars/requirements-pdf-content-classifier.txt",
+            ):
+                self.assertIn(required, names)
             command_names = {
                 name for name in names if name.startswith("grok/commands/")
             }
@@ -111,9 +167,64 @@ class RuntimePackageTest(unittest.TestCase):
                         }
                         for part in path.relative_to(源目录 / "ars").parts[:2]
                     )
+                    and "tests" not in path.relative_to(源目录 / "ars").parts
+                    and path.name != "_ci_pytest_manifest.toml"
+                    and not (
+                        directory_name == "scripts"
+                        and path.name.startswith("test_")
+                        and path.suffix == ".py"
+                    )
                 }
                 for source_file in source_files:
                     self.assertIn(source_file, names)
+
+            # scripts 中所有非测试运行脚本及其 fixtures 都必须保留。
+            scripts_root = 源目录 / "ars" / "scripts"
+            for path in scripts_root.rglob("*"):
+                if not path.is_file():
+                    continue
+                relative_to_ars = path.relative_to(源目录 / "ars")
+                if (
+                    "tests" in relative_to_ars.parts
+                    or path.name == "_ci_pytest_manifest.toml"
+                    or (
+                        path.name.startswith("test_")
+                        and path.suffix == ".py"
+                    )
+                    or path.name == ".DS_Store"
+                    or path.suffix == ".pyc"
+                    or "__pycache__" in path.parts
+                ):
+                    continue
+                self.assertIn(path.relative_to(源目录).as_posix(), names)
+
+            for script_name in (
+                "verify_passport.py",
+                "inquiry_branch_ledger.py",
+                "research_workflow_profile.py",
+            ):
+                script_path = scripts_root / script_name
+                if script_path.is_file():
+                    self.assertIn(script_path.relative_to(源目录).as_posix(), names)
+
+            fixtures_root = scripts_root / "fixtures"
+            for path in fixtures_root.rglob("*"):
+                if path.is_file():
+                    self.assertIn(path.relative_to(源目录).as_posix(), names)
+
+            for required in (
+                "ars/hooks/hooks.json",
+                "ars/hooks/run_guard.sh",
+            ):
+                self.assertIn(required, names)
+            for directory_name in ("ars/commands", "ars/hooks"):
+                source_files = {
+                    path.relative_to(源目录).as_posix()
+                    for path in (源目录 / directory_name).rglob("*")
+                    if path.is_file()
+                }
+                self.assertTrue(source_files)
+                self.assertTrue(source_files.issubset(names))
 
     def test_包内清单写入轻量变体和最小摘要(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -122,7 +233,7 @@ class RuntimePackageTest(unittest.TestCase):
             manifest = json.loads(contents["manifest.json"].decode("utf-8"))
 
             self.assertEqual(
-                manifest.get("packaging", {}).get("variant"), "runtime-minimal"
+                manifest.get("packaging", {}).get("variant"), "runtime-core"
             )
             ars_files = [
                 (Path(name).relative_to("ars"), content)
@@ -174,6 +285,14 @@ class RuntimePackageTest(unittest.TestCase):
             with tarfile.open(archive_path, mode="r:gz") as archive:
                 archive.extractall(extracted, filter="data")
             self.assertEqual([], validate_package(extracted))
+
+    def test_默认输出文件名使用_runtime_core(self) -> None:
+        output = _默认输出路径(源目录, "tar.gz")
+        self.assertEqual(
+            output.name,
+            "academic-research-suite-"
+            f"{(源目录 / 'VERSION').read_text(encoding='utf-8').strip()}-runtime-core.tar.gz",
+        )
 
 
 if __name__ == "__main__":

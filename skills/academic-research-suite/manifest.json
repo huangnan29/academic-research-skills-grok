@@ -1,6 +1,6 @@
 {
   "name": "academic-research-suite",
-  "adapter_version": "0.2.0",
+  "adapter_version": "0.2.1",
   "generated_for": "grok-build",
   "generated_date": "2026-08-29",
   "minimum_tested_grok_version": "1.0.5",
@@ -43,7 +43,7 @@
     "vendored_root": "ars",
     "runtime_adapter_root": "grok",
     "command_source": "grok/commands",
-    "runtime_minimal_supported": true
+    "runtime_core_supported": true
   },
   "runtime_defaults": {
     "execution_mode": "inline",
