@@ -26,8 +26,8 @@ class 根级持续集成契约测试(unittest.TestCase):
         self.assertRegex(self.工作流, r"(?m)^  pull_request:\s*$")
 
     def test_使用检出和_uv官方动作(self) -> None:
-        self.assertIn("uses: actions/checkout@v4", self.工作流)
-        self.assertIn("uses: astral-sh/setup-uv@v6", self.工作流)
+        self.assertIn("uses: actions/checkout@v7", self.工作流)
+        self.assertIn("uses: astral-sh/setup-uv@v10.0.1", self.工作流)
 
     def test_所有显式_python命令都通过_uv(self) -> None:
         self.assertIn("uv run python scripts/validate_skill.py", self.工作流)
