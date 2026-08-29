@@ -233,15 +233,16 @@ evaluate_case = 判定输出
 def 执行案例(
     case: Mapping[str, Any],
     timeout: float = 默认超时秒数,
-    runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
 ) -> dict[str, Any]:
     """执行一个案例；只调用固定的本机 ``grok -p`` 命令。"""
 
     if not math.isfinite(timeout) or timeout <= 0:
         raise 行为契约错误("超时必须是正数")
     prompt = case["prompt"]
+    command_runner = runner or subprocess.run
     try:
-        completed = runner(
+        completed = command_runner(
             ["grok", "-p", prompt],
             capture_output=True,
             text=True,
