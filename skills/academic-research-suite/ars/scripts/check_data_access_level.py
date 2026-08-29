@@ -8,11 +8,32 @@ must equal its pin. The governing rule (`ground_truth_isolation_pattern.md`
 reflect the DIRTIEST input the skill may legitimately consume across all
 its modes.
 
-Pin provenance is not uniform (honest-claim discipline): the
-`academic-pipeline: raw` pin is #756-derived (Stage 1 accepts raw user
-requests, mid-entry accepts raw papers; the gates run inside the pipeline).
-The other three pins freeze the pre-existing declarations against silent
-drift — they have not been re-derived under the dirtiest-input rule.
+Pin provenance (honest-claim discipline) — all four pins are now
+derivation-backed under the dirtiest-input rule:
+
+- `academic-pipeline: raw` — #756-derived (Stage 1 accepts raw user
+  requests, mid-entry accepts raw papers; the gates run inside the
+  pipeline).
+- `academic-paper: raw` — #773-derived. Standalone modes (revision,
+  revision-coach, rebuttal-audit, citation-check, ...) ingest ungated
+  user drafts and third-party reviewer comments, and
+  literature_strategist_agent's search-fills-gap flow ingests
+  external-index search results inside the skill — Layer-1 inputs both.
+  The prior `redacted` described the orchestrated pipeline path, where
+  Stage 2 inputs arrive as Stage-1 sanitized artifacts (Gate 2.5 runs
+  AFTER Stage 2, so "post-gate" would overstate even that path).
+- `academic-paper-reviewer: raw` — #773-derived. The standalone
+  `/ars-reviewer` entry (Routing Discipline Step 1 routes "review my
+  paper" directly) legitimately consumes an ungated pasted manuscript;
+  `verified_only` was at best true for the pipeline's initial Stage 3
+  dispatch (post-Gate-2.5) — Stage 3' re-review consumes a freshly
+  revised manuscript before Stage 4.5 — and the rule quantifies over
+  ALL entry paths.
+- `deep-research: raw` — #773 re-affirmed on its inputs: raw user
+  queries and unverified web/database search results are its core
+  intake. A ceiling argument additionally applies (`raw` is the
+  dirtiest value, so no re-derivation could move it further).
+
 Changing any pin must be a deliberate, reviewed re-application of the rule,
 and a new top-level skill must be registered here before it passes.
 """
@@ -30,10 +51,11 @@ from _skill_lint import (
 
 LEGAL_VALUES = frozenset({"raw", "redacted", "verified_only"})
 
-# Dirtiest-input pins (#756). Keyed by skill directory name.
+# Dirtiest-input pins (#756, re-derived across all modes in #773).
+# Keyed by skill directory name.
 EXPECTED_LEVELS = {
-    "academic-paper": "redacted",
-    "academic-paper-reviewer": "verified_only",
+    "academic-paper": "raw",
+    "academic-paper-reviewer": "raw",
     "academic-pipeline": "raw",
     "deep-research": "raw",
     # Separately vendored in ARS-Codex; its manager may receive raw study

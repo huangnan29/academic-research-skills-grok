@@ -34,6 +34,28 @@ and no consumer may state more than the row's recorded claim ceiling.
 - **Maximum licensed claim**: A frozen measurement design and offline validation assets exist; no breadth or diversity claim is computable.
 - **Next required evaluation**: dispatch the frozen Phase-2 envelope with two blinded human judges and an arm-blind adjudicator (#659)
 
+### rq_formation.research_workflow_profile
+
+- **Mechanism**: research_workflow_profile @ research-workflow-profile/1.0 (#742): explicit user selection or visible field-general fallback, canonical-content binding, and append-only correction receipts with non-destructive stale marks
+- **Mechanism status**: IMPLEMENTED / deterministic conformance: CI_GATED (pinned by scripts/research_workflow_profile.py::validate_profile; scripts/test_research_workflow_profile.py)
+- **Behavioral evidence**: NOT_RUN
+- **External/human outcome evidence**: none
+- **Known exclusions**: registered under rq_formation only because selection or confirmation occurs there; the profile governs every downstream stage and this single row is not a stage-coverage claim; profiles declare applicability and vocabulary only; they do not judge manuscript quality, venue fit, acceptance likelihood, or evidence rank
+- **Transport limits**: explicit-selection offline runtime only; no default workflow integration or manuscript-based profile inference ships; the preregistered usability protocol has not run with human participants
+- **Maximum licensed claim**: Closed schemas, canonical-content validation, a field-general fallback, and append-only correction receipts exist; no usability or research-outcome claim.
+- **Next required evaluation**: complete the section 8-A pre-recruitment amendment, then run the frozen paired human-participant protocol separately by family and experience stratum (#742)
+
+### rq_formation.inquiry_branch_ledger
+
+- **Mechanism**: opt-in inquiry_branch_ledger @ inquiry-branch-ledger/1.0 (#743): event-sourced branch origin labels, author disposition, profile-bound live-budget replay, and a compact Stage 1 design-freeze summary
+- **Mechanism status**: IMPLEMENTED / deterministic conformance: CI_GATED (pinned by scripts/inquiry_branch_ledger.py::replay_ledger; scripts/test_inquiry_branch_ledger.py)
+- **Behavioral evidence**: NOT_RUN
+- **External/human outcome evidence**: none
+- **Known exclusions**: the ledger preserves recorded alternatives and recovery state; it does not establish novelty, correctness, usefulness, or research value; the simple path remains unchanged: the feature is opt-in and does not materialize state or show a summary with fewer than two recorded branches
+- **Transport limits**: opt-in alpha behind ARS_INQUIRY_LEDGER=1; author events are within-session attestations, not authenticated identity; no paired usability or research-family evaluation has run
+- **Maximum licensed claim**: An opt-in, profile-bound ledger can preserve and replay recorded alternatives and their disposition history; no novelty, correctness, value, or usability claim.
+- **Next required evaluation**: run the #742 section 8 paired protocol for breadth, wrong-turn recovery, burden, time, and abandonment, stratified by family and experience (#743/#659)
+
 ## `retrieval`
 
 ### retrieval.citation_existence_gate
@@ -121,6 +143,17 @@ and no consumer may state more than the row's recorded claim ceiling.
 - **Transport limits**: synthetic conformance only; single frozen run at one commit
 - **Maximum licensed claim**: The deterministic screen conforms to its own synthetic expected-match grammar (190/190); real-world false-positive/negative performance is unmeasured.
 - **Next required evaluation**: real-corpus FP/FN measurement against independently labeled tortured-phrase instances
+
+### integrity_check.inquiry_branch_ledger
+
+- **Mechanism**: opt-in inquiry_branch_ledger @ inquiry-branch-ledger/1.0 (#743): first-degree stale-cause replay and compact summaries at the Stage 2.5 and Stage 4.5 mandatory checkpoints
+- **Mechanism status**: IMPLEMENTED / deterministic conformance: CI_GATED (pinned by scripts/inquiry_branch_ledger.py::replay_ledger; scripts/test_inquiry_branch_ledger.py)
+- **Behavioral evidence**: NOT_RUN
+- **External/human outcome evidence**: none
+- **Known exclusions**: invalidation is first-degree over author-recorded downstream references; no transitive artifact-dependency claim; a stale mark never rewrites, deletes, regenerates, or judges an artifact
+- **Transport limits**: opt-in alpha behind ARS_INQUIRY_LEDGER=1; checkpoint summaries are deterministic views over caller-supplied, digest-bound state; no paired usability or research-family evaluation has run
+- **Maximum licensed claim**: Recorded first-degree dependencies can be marked visibly stale and resolved without silent mutation; no completeness, correctness, or usability claim.
+- **Next required evaluation**: run the #742 section 8 paired protocol for recovery, burden, time, abandonment, and family fit before any promotion beyond opt-in (#743)
 
 ## `review`
 

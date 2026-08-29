@@ -23,6 +23,83 @@ ports, and (v3.6.7+) cross-model audit artifact pipelines.
   same lint. The matrix indexes evidence, it does not create it: a row licenses
   at most its recorded `max_licensed_claim`, never more.
 
+## Sealed Promotion Bakeoff preregistration (#789)
+
+- `cross_model/promotion_bakeoff_sealed_commitment.schema.json` is the closed
+  public pre-fleet carrier: campaign id, LF-normalized probe-set SHA-256, and
+  the fixed 30-row aggregate composition only. It has no row, label, path, or
+  free-text field in which the answer key can be exposed.
+- `cross_model/promotion_bakeoff_sealed_reveal.schema.json` binds that immutable
+  commitment to the post-fleet `probe_set.json` reveal. The standard-library
+  checker `scripts/check_promotion_bakeoff_preregistration.py` validates the
+  closed probe shape, strict Git introduction order, immutable history,
+  canonical paths, worktree/index state, and detectable reuse across all local
+  refs and every historical probe version. It rejects shallow history and
+  unreadable historical objects; the sole 2026-08-19 unsealed grandfather is
+  pinned to its canonical path, normalized digest, blob history, and file mode.
+  Verification receipts enumerate every bound squash/cherry-pick reveal copy
+  whose remote publication time must be witnessed after the fleet.
+
+The checker proves repository evidence only. Remote publication time and fleet
+start/end time cannot be derived from local Git, so its receipt explicitly
+requires the public permalink, passing CI witness, and fleet-time bounds in the
+run report before a result is gate-eligible. The full operator lifecycle and
+claims boundary live in `../cross_model_verification.md` § Promotion Bakeoff.
+
+## Research-family workflow profiles (#742)
+
+- `research_workflow/research_workflow_profile.schema.json`
+  (`research-workflow-profile/1.0`) is the closed, manuscript-blind declaration
+  of stage applicability and vocabulary. Omitted task families resolve to
+  `unresolved_fit`, never to applicable. The profile embeds a SHA-256 over its
+  JSON Canonical Form with `content_sha256` replaced by 64 zeroes; persisted
+  profile files must themselves be exact canonical bytes.
+- `research_workflow/research_workflow_profile_selection_receipt.schema.json`
+  (`research-workflow-profile-selection-receipt/1.0`) records an append-only
+  user selection/confirmation/fallback chain. A correction appends a new
+  binding and one visible `profile_context_changed` stale mark per supplied
+  prior-profile stage output. It never rewrites or removes an artifact. Newly
+  introduced authority requirements remain attached to each mark with an
+  explicit `authority_sensitive_reuse_gate: unmet`, so a later consumer can
+  block that reuse until the applicable check passes.
+- `../research_workflow_profiles/field_general.json` is the mandatory shipped
+  fallback: every task family is unresolved except the field-general integrity
+  gates, alternatives are unresolved, the live-branch budget is 3, and an empty
+  authority list means “unknown; ask the user,” never “not required.” It ships
+  with explicit English and zh-TW display names.
+
+The standard-library runtime is `scripts/research_workflow_profile.py`. Its
+`select` command treats an omitted `--profile` as a visibly recorded automatic
+fallback; an explicit profile requires `--selected-by`. `correct` consumes an
+explicit prior-profile binding and stage-output inventory, then emits the new
+receipt to stdout only. No command reads manuscript content, infers a family,
+changes the default workflow, or writes scholar-owned artifacts. The human
+usability protocol and every outcome claim remain `NOT_RUN`.
+
+## Opt-in inquiry branch ledger (#743)
+
+- `research_workflow/inquiry_branch_ledger.schema.json`
+  (`inquiry-branch-ledger/1.0`) is the closed event-source contract for
+  author-originated branches, parked AI-surfaced facets, explicit adoption,
+  disposition, reopen signals, profile rebound, and first-degree artifact
+  staleness. Dense event ids plus a canonical previous-event hash chain detect
+  interior rewrite/reorder; the separate passport digest is the required
+  trusted head for truncation detection.
+- `passport/inquiry_ledger_ref.schema.json` closes the optional Material
+  Passport pointer to `{ledger_path, ledger_version, content_sha256}`. It never
+  embeds a branch or profile and never widens a filesystem path outside the
+  caller-supplied workspace root.
+
+The deterministic offline runtime is `scripts/inquiry_branch_ledger.py`. Replay
+requires every exact profile bound by the ledger so the live-branch budget is
+never inferred from a current default. Reopen appends contiguous deterministic
+stale-cause events; clearing one cause cannot clear another. Ledger/passport
+publication uses a stable sidecar lock and durable recovery journal. The
+feature is OFF unless `ARS_INQUIRY_LEDGER=1`, does not materialize before a
+second branch, and shows compact summaries only at the frozen Stage 1, 2.5,
+4.5, or still-actionable recorded-signal moments. Behavioral and usability evidence is
+`NOT_RUN`.
+
 ## PDF read-integrity and optional content advisory (#512 follow-up)
 
 - `pdf/pdf_read_preflight.schema.json` accepts the unchanged legacy structural sidecar
@@ -195,6 +272,9 @@ Schemas for Material Passport input ports.
   entries that could not be included in the corpus.
 - `passport/reset_ledger_entry.schema.json` (v3.6.3) — `reset_boundary[]` ledger entries
   for the opt-in passport reset boundary protocol.
+- `passport/inquiry_ledger_ref.schema.json` (#743) — optional digest-bound
+  pointer to the separate canonical inquiry branch ledger; missing or
+  mismatched targets fail visibly and unpointed candidates are ignored.
 - `passport/audit_artifact_entry.schema.json` (v3.6.7 Step 6) — `audit_artifact[]` entries
   recording one cross-model audit run per downstream-agent deliverable. Two lifecycle
   states (proposal / persisted) share the schema via `oneOf`. Cross-artifact invariants
@@ -800,14 +880,27 @@ from deterministic criterion resolution:
   selection, precedence, and as-of input;
 - `criteria_registry.schema.json` — the versioned four-part authority registry with
   criterion provenance, applicability/exclusions, freshness, and blocking policy;
+- `review_criteria_source_receipt.schema.json` — the closed discriminated
+  receipts for mutable-web semantic snapshots and immutable Git repository-head
+  verification;
 - `review_target_context.schema.json` — the pointer-only resolved profile, three
   independent outcome dimensions, parallel conflicts, fallback state, and stable
   digests.
 
-`shared/review_criteria_registry.json` intentionally ships only a field-general
-baseline. It does not present remembered or synthetic journal rules as official
-venue guidance. Exact venue × track × contribution-type behavior is covered by
-synthetic fixtures.
+`shared/review_criteria_registry.json` ships a bounded source-backed proving set
+for MSR 2027 Technical Papers Full Papers and ACM SIGSOFT's General and
+Repository Mining standards, alongside the field-general fallbacks. This is not
+a coverage claim: targets without an exact official profile remain unresolved,
+and the SIGSOFT rows remain advisory unless venue adoption is separately
+sourced. The executable exact-target declaration and hermetic source/digest
+checks live under `scripts/fixtures/review_target_context/` and
+`scripts/test_resolve_review_target_context.py`; the dated source audit is
+`audits/575-source-backed-proving-set-2026-08-24.md`. Mutable-page and
+immutable-repository verification receipts live under
+`shared/review_criteria_sources/`. The fixture models a hypothetical
+author-confirmed declaration; it is not a real-manuscript attestation. The
+registry release preserves its id, increments its version, and visibly rotates
+V1 resolved digests so consumers must explicitly rebind.
 
 Resolve a declaration and optionally emit the Phase 0/1 Target Criteria Brief:
 

@@ -42,10 +42,10 @@ A stress test of 68 AI-generated citations found 31% had problems — and all pa
 | Model | API ID | Provider | Best For |
 |-------|--------|----------|----------|
 | Claude (session model) | _(inherited Claude Code session model — e.g., Fable 5)_ | Anthropic | Primary model (default for all ARS skills) |
-| GPT-5.5 | `gpt-5.5` | OpenAI | Cross-verification — recommended balance (supports `xhigh` reasoning) |
-| GPT-5.5 Pro | `gpt-5.5-pro` | OpenAI | Cross-verification — strongest reasoning (premium pricing: ~6× GPT-5.5) |
-| GPT-5.6 Sol | `gpt-5.6-sol` | OpenAI | Cross-verification — frontier tier, **provisional pending ARS validation** (same standard rates as GPT-5.5) |
-| Gemini 3.1 Pro | `gemini-3.1-pro-preview` | Google | Cross-verification — strong at factual verification |
+| GPT-5.6 Sol | `gpt-5.6-sol` | OpenAI | Cross-verification — current OpenAI flagship, recommended OpenAI verifier; **validated for the ChatGPT-subscription citation transport** (2026-08-19/20 bakeoff, superiority on recall + latency — `audits/bakeoff-gpt-5-6-sol-codex-2026-08-19.md`); **provisional pending ARS validation** on the first-party API route (same standard rates as GPT-5.5) |
+| Gemini 3.1 Pro | `gemini-3.1-pro-preview` | Google | Cross-verification — current Google flagship (validated); strong at factual verification |
+| GPT-5.5 | `gpt-5.5` | OpenAI | Cross-verification — previous generation, superseded by GPT-5.6 (2026-07-09); validated, remains fully supported (supports `xhigh` reasoning) |
+| GPT-5.5 Pro | `gpt-5.5-pro` | OpenAI | Cross-verification — previous generation; validated; strongest GPT-5.5-line reasoning (premium pricing: ~6× GPT-5.5) |
 
 ### OpenAI-compatible providers (Chat Completions API — UNGROUNDED, opt-in)
 
@@ -58,11 +58,11 @@ A stress test of 68 AI-generated citations found 31% had problems — and all pa
 
 > **Compatible providers are ungrounded.** They expose no hosted web-search tool, so there is no grounding evidence behind a verdict. A positive `VERIFIED` is downgraded to `NOT_SEARCHED` and never counts as agreement in citation verification; a `NOT_FOUND`/`MISMATCH` survives as a disagreement. They ARE first-class for Devil's Advocate critique (which needs no grounding) — but a DA finding from any provider is an adversarial hypothesis, not standalone evidence, unless independently sourced.
 
-**Recommended cross-verification pair:** the inherited Claude session model (primary) + GPT-5.5 or Gemini 3.1 Pro (verifier).
+**Recommended cross-verification pair:** the inherited Claude session model (primary) + a current-generation second-family verifier — Gemini 3.1 Pro (validated) or GPT-5.6 Sol (provisional; see the note below).
 
 > The primary row deliberately names no version: the primary is always the session model, so the row cannot go stale on the next Anthropic release. Verifier IDs stay concrete because they are literal API strings the user must export. (`gpt-5.4` / `gpt-5.4-pro` remain accepted for existing setups.)
 
-> **GPT-5.6 Sol is provisional (listed 2026-07-11, three days after release).** Its endpoint support (Responses API), hosted `web_search` tool, and reasoning-effort values are confirmed against OpenAI's model documentation, but its ARS-specific behavior — grounded-search completion rate, citation-mismatch recall, false-disagreement rate, response-shape stability against the jq grounding guards, p95 latency — is unvalidated. **GPT-5.5 remains the recommended default** until `gpt-5.6-sol` passes the § Promotion Bakeoff below (non-inferiority on those measures earns `validated`) AND a separate superiority or operational-benefit case is stated for the default flip; run `scripts/cross_model_smoke_test.sh` against your key before adopting it. Two facts that differ from the GPT-5.5 lineup: GPT-5.6 ships **no `-pro` model ID** — premium operation is standard `gpt-5.6-sol` plus `reasoning: {mode: "pro"}` in the request, billed at standard token rates with more model work per request (the old fixed ~6× unit-price split does not carry over); and its reasoning effort accepts `none|low|medium|high|xhigh|max` (GPT-5.5 tops out at `xhigh`), defaulting to `medium` in both standard and pro modes.
+> **GPT-5.6 Sol is provisional (listed 2026-07-11, three days after release).** Its endpoint support (Responses API), hosted `web_search` tool, and reasoning-effort values are confirmed against OpenAI's model documentation, but its ARS-specific behavior — grounded-search completion rate, citation-mismatch recall, false-disagreement rate, response-shape stability against the jq grounding guards, p95 latency — is unvalidated. **Recommendation policy (2026-08-19):** GPT-5.5 was superseded by the GPT-5.6 family on 2026-07-09, so the recommendation names the current generation rather than a superseded id — a lifecycle decision, not a measurement claim. `validated` is earned only there — and on 2026-08-19 a codex-transport bakeoff run earned it for the **ChatGPT-subscription citation transport**, with a measured superiority case from the counterbalanced gate fleet (fabrication recall 0.90 vs 0.80, p95 latency 25.0 s vs 49.6 s nearest-rank, grounded completion tied, no inferiority on any measure; recall and latency led in all five paired fleets — `audits/bakeoff-gpt-5-6-sol-codex-2026-08-19.md`). On the **first-party API route** `gpt-5.6-sol` stays **provisional** — that run did not exercise the API route's jq grounding guards, and no parity or superiority is claimed there. For the API route, run `scripts/cross_model_smoke_test.sh` against your key before adopting it; users who prefer an API-route-validated id can stay on `gpt-5.5` or `gemini-3.1-pro-preview` (validated = the id-status allowlist below; the API route has no recorded bakeoff run). Two facts that differ from the GPT-5.5 lineup: GPT-5.6 ships **no `-pro` model ID** — premium operation is standard `gpt-5.6-sol` plus `reasoning: {mode: "pro"}` in the request, billed at standard token rates with more model work per request (the old fixed ~6× unit-price split does not carry over); and its reasoning effort accepts `none|low|medium|high|xhigh|max` (GPT-5.5 tops out at `xhigh`), defaulting to `medium` in both standard and pro modes.
 
 Using two non-Anthropic models as primary+verifier is possible but not tested with ARS prompts.
 
@@ -74,7 +74,7 @@ You need API keys from at least one additional provider. ARS itself runs inside 
 
 ### Step 1: Get API Keys
 
-**OpenAI (GPT-5.5 / GPT-5.6 Sol):**
+**OpenAI (GPT-5.6 Sol / GPT-5.5):**
 1. Go to [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 2. Create a new API key
 3. Copy the key (starts with `sk-`)
@@ -99,9 +99,11 @@ Add to your shell profile (`~/.zshrc` or `~/.bashrc`):
 
 # --- Option A: OpenAI (first-party, grounded) ---
 export OPENAI_API_KEY="<your-openai-api-key>"
-export ARS_CROSS_MODEL="gpt-5.5"
-# Frontier alternative, provisional pending ARS validation (see Supported Models):
-# export ARS_CROSS_MODEL="gpt-5.6-sol"
+# Current OpenAI flagship — provisional pending ARS validation (see Supported Models;
+# run scripts/cross_model_smoke_test.sh against your key before relying on it):
+export ARS_CROSS_MODEL="gpt-5.6-sol"
+# Previous generation, validated (designated bakeoff baseline):
+# export ARS_CROSS_MODEL="gpt-5.5"
 # Optional: reasoning effort for OpenAI verifier calls (unset = the provider's own
 # default for the chosen model). GPT-5.6 accepts none|low|medium|high|xhigh|max;
 # GPT-5.5 tops out at xhigh.
@@ -134,7 +136,10 @@ by detection and execution.
 ```bash
 # Citation-integrity calls only. General DA/reviewer/judgment calls remain on API transport.
 export ARS_CROSS_MODEL_TRANSPORT="codex"
-export ARS_CROSS_MODEL="gpt-5.5"
+# gpt-5.6-sol is validated for THIS transport (2026-08-19 codex-transport bakeoff,
+# superiority on recall + latency — audits/bakeoff-gpt-5-6-sol-codex-2026-08-19.md).
+# gpt-5.5 remains the validated bakeoff baseline alternative.
+export ARS_CROSS_MODEL="gpt-5.6-sol"
 
 python3 scripts/cross_model_codex_transport.py detect
 # The producer sends one closed codex_citation_request/1.0 object on stdin:
@@ -179,7 +184,7 @@ If you don't want cross-model verification running all the time, you can enable 
 
 ```bash
 # Enable for this session only
-export ARS_CROSS_MODEL="gpt-5.5"
+export ARS_CROSS_MODEL="gpt-5.6-sol"
 
 # Disable for this session
 unset ARS_CROSS_MODEL
@@ -402,7 +407,7 @@ contract is normative in
 machine-checked by the #630 test suite. The Bash entrypoints use syntax compatible
 with macOS Bash 3.2.
 
-### OpenAI (GPT-5.5 / GPT-5.5 Pro / GPT-5.6 Sol)
+### OpenAI (GPT-5.6 Sol / GPT-5.5 / GPT-5.5 Pro)
 
 Use the **Responses API** (`/v1/responses`) — the hosted `web_search` tool lives there. (Chat Completions does not take `tools: [{type: "web_search"}]`; web search on that endpoint requires the separate `gpt-5-search-api` model, so this example targets Responses to stay model-agnostic across `gpt-5.5` / `gpt-5.5-pro` / `gpt-5.6-sol` / the legacy `gpt-5.4*` ids.)
 
@@ -591,6 +596,9 @@ if [ -n "$ARS_CROSS_MODEL" ]; then
     case " gpt-5.5 gpt-5.5-pro gpt-5.4 gpt-5.4-pro gemini-3.1-pro-preview " in
       *" $1 "*) echo "validated"; return ;;
     esac
+    # gpt-5.6-sol: validated for the codex subscription citation transport
+    # (2026-08-19 bakeoff); provisional HERE because this allowlist gates the
+    # first-party API route, which has no recorded bakeoff run.
     case " gpt-5.6-sol " in
       *" $1 "*) echo "provisional"; return ;;
     esac
@@ -650,12 +658,21 @@ route is selected, consume the detector's closed status instead; an invalid
 transport selector is a visible configuration error and never falls through to
 an API route.
 
-### Promotion Bakeoff (provisional → validated → recommended default)
+### Promotion Bakeoff (provisional → validated)
 
-The run that flips a provisional id (today: `gpt-5.6-sol`) to validated is defined here so a future promotion argues against numbers, not vibes (#518). Validation and the recommended-default flip are two separate promotions — see the Outcome bullet: a bare non-inferiority pass never flips the default by itself.
+The run that flips a provisional id (today: `gpt-5.6-sol`) to validated is defined here so a future promotion argues against numbers, not vibes (#518). Validation and recommendation are separate axes. (2026-08-19, #783: the recommendation moved to the current generation on lifecycle grounds — GPT-5.5 was superseded — ahead of validation; that flip carries no measurement claim. This bakeoff remains the only route to `validated`, and any claim of measured parity or superiority still requires the run below.)
+
+> **Recorded run (2026-08-19/20, #787 — codex-transport variant).** The procedure below was executed over the #630 ChatGPT-subscription citation transport (entry gate: `scripts/cross_model_smoke_test_codex.sh` PASS for baseline and candidate; measure analogues: grounding evidence = receipt `searched`, measure 4 = zero fail-closed receipt-guard misfires). All five measures passed in the counterbalanced gate fleet, with superiority on measures 2 (fabrication recall) and 5 (latency) and a tie on measure 1 — see `audits/bakeoff-gpt-5-6-sol-codex-2026-08-19.md` (probe set `evals/bakeoff/2026-08-19-gpt-5-6-sol-codex/`, sha256 in the report). The result is **transport-qualified**: `gpt-5.6-sol` is validated for the subscription citation transport; it remains provisional on the first-party API route, whose jq grounding guards that run did not exercise. A scored fleet is bound to its preregistered frozen instrument; later instrument hardening that validates only surfaces outside every consumed path applies from the next fleet and does not retroactively invalidate a recorded gate result (boundary rationale in the run report's Instrument-freeze decision record). An API-route run requires a FRESH probe set under the #789 sealed-preregistration protocol below — the 2026-08-19 set's labels are public, so reusing it would expose a live-search run to answer-key retrieval.
 
 - **Entry gate:** `scripts/cross_model_smoke_test.sh` passes against the candidate id.
-- **Probe-set precondition (reproducibility):** before any run counts, the probe set must be committed as a versioned fixture (under `evals/` or `audits/`) listing each reference's full text, its ground-truth label (`real` / `fabricated`, with source DOI/URL for the real ones), and the file's sha256 recorded in the run report. A bakeoff against an ad-hoc, unversioned probe set is not a gate result. Composition: 30 references — 20 real (10 easy: DOI-keyed journal articles; 10 hard: preprints, DOI-less, non-English) + 10 synthetic plausible fabrications.
+- **Probe-set precondition — sealed preregistration (#789; both API and codex transports):** every future gate run uses `scripts/check_promotion_bakeoff_preregistration.py` and the closed `shared/contracts/cross_model/promotion_bakeoff_sealed_commitment.schema.json` + `shared/contracts/cross_model/promotion_bakeoff_sealed_reveal.schema.json` contracts. A bakeoff against an ad-hoc/unsealed set, or one revealed before its fleet completed, is not a gate result.
+  1. **Prepare privately.** Build one `ars-bakeoff-probe-set/1.0` fixture with 30 references — 20 real (10 easy DOI-keyed + 10 hard preprint/DOI-less/non-English) and 10 synthetic plausible fabrications. Real rows carry resolver-confirmed DOI/arXiv/URL ground truth; fabricated rows carry a fresh negative-check witness. Keep the labeled file outside Git (an untracked canonical path is permitted, but a private path is safer). `python3 scripts/check_promotion_bakeoff_preregistration.py prepare --campaign-id <id> --probe-set <private-file>` validates the shape and historical non-reuse, then prints a closed commitment containing only the campaign id, LF-normalized file sha256, fixed row count, and aggregate composition — never a row, label, ground-truth identifier, fixture path, or free-text escape hatch.
+  2. **Commit and publish the seal before any call.** Save that output as `evals/bakeoff/<id>/sealed_commitment.json` in a dedicated commit whose only changed path is that file; do not stage the fixture or reveal carrier. Push it, wait until the commit and its passing CI result are publicly reachable, record the immutable commit permalink, then run `python3 scripts/check_promotion_bakeoff_preregistration.py preflight --commitment evals/bakeoff/<id>/sealed_commitment.json --probe-set <private-file>`. A local commit, timestamp, or later ancestry proof is not a substitute for this public-before-fleet witness.
+  3. **Run while sealed.** Run the counterbalanced baseline/candidate fleet with the fixture local. No scored call may precede the successful preflight; neither `probe_set.json` nor `sealed_reveal.json` may enter Git while any fleet call remains pending.
+  4. **Reveal after the fleet.** Once all calls have reached terminal retained rows, place the unchanged fixture at `evals/bakeoff/<id>/probe_set.json`; run the checker's `make-reveal` command to produce `evals/bakeoff/<id>/sealed_reveal.json`; add those two files together in one later commit. `verify-reveal` (one campaign) or `verify-tree` (CI, all campaigns) fails closed on digest/composition drift, duplicate JSON keys, symlink/path substitution, non-isolated or rewritten commitments, non-ancestor/same-commit seals, probe/reveal introduction drift, or post-reveal mutation. Squash/cherry-pick copies are accepted only when they descend the same seal and carry the identical bound probe/reveal lifecycle; the receipt exposes every qualifying introduction in `reveal_copy_git_commits` rather than hiding source-ref copies.
+  5. **Never reuse a published answer key.** Once labels appear in any Git version, those exact probe bytes are retired permanently and every later gate gets a fresh fabrication pool. The verifier scans every historical version of every `evals/bakeoff/**/probe_set.json`; a fabricated reference remains reused even if its id, context, case, Unicode width, spacing, or punctuation changes. Previously used real references may remain, but no previously labeled reference may enter the new fabricated pool. The 2026-08-19 fixture is the sole explicitly grandfathered unsealed artifact: its canonical path and LF-normalized SHA-256 are pinned, its blob bytes and regular-file mode must remain immutable across reachable history, and it remains part of the published-history scan. Verification requires a complete non-shallow local history and fails closed when a referenced historical object cannot be read.
+
+  The reveal verifier proves byte binding, composition, Git immutability/order, and detectable historical non-reuse. It cannot prove when a commit became visible on a remote or when an external call ran. The run report therefore MUST record the public commitment permalink and CI result, successful preflight output, fleet start/end bounds, final verifier receipt, and—for every listed reveal-copy commit in `reveal_copy_git_commits`—a public permalink plus evidence that it first became publicly reachable only after the fleet ended. A copy published before or during the fleet invalidates the gate even when a later squash commit is clean. Missing remote/timing evidence makes the fleet exploratory, not a gate result.
 - **Procedure:** run the baseline (`gpt-5.5`) and the candidate the same day, one call per reference, 3 repeats. Per-reference verdict = the verdict returned by ≥ 2 of 3 repeats; if no verdict reaches 2 (a 1–1–1 split), the reference is **indeterminate** and scored conservatively against the model that produced it — a miss for recall (measure 2), a false disagreement for measure 3. Grounded-search completion (measure 1) is computed per call, so ties don't apply.
 - **Non-inferiority thresholds — all five must pass:**
   1. **Grounded-search completion rate** (share of calls returning grounding evidence) ≥ baseline − 5 pp.
@@ -663,9 +680,9 @@ The run that flips a provisional id (today: `gpt-5.6-sol`) to validated is defin
   3. **False-disagreement rate** on the 20 real references (share incorrectly flagged `NOT_FOUND`/`MISMATCH`) ≤ baseline + 5 pp.
   4. **jq-guard shape stability:** zero guard misfires attributable to response-shape change across all calls (hard requirement — a shape change that trips the fail-closed guards disqualifies regardless of the other measures).
   5. **p95 latency** ≤ 2× baseline.
-- **Outcome — two distinct promotions, not one:**
+- **Outcome — validation, plus a separate claim rule:**
   - **All five pass → `provisional` becomes `validated`** (the id-status allowlist and the Supported Models note update; a promotion PR records the run under `audits/` with the probe-set hash). Non-inferiority earns trust, nothing more.
-  - **Recommended default flips only with a separate, stated reason on top of the validated pass** — superiority on at least one measure with no inferiority elsewhere, or a concrete operational benefit (cost, latency, capability) the promotion PR names explicitly. A candidate that merely scraped under every tolerance (−5 pp grounding, −5 pp recall, +5 pp false disagreements, 2× latency) is validated but NOT the new recommendation.
+  - **A measured-superiority claim additionally requires observed superiority on at least one of the five measures, with no inferiority elsewhere, named explicitly in the promotion PR.** An operational benefit (cost, latency, capability) is a recommendation-policy argument, never a measurement claim. A candidate that merely scraped under every tolerance (−5 pp grounding, −5 pp recall, +5 pp false disagreements, 2× latency) is validated, nothing more. (Recommendation itself follows generation currency — see the 2026-08-19 note above — but stays caveated as provisional/unmeasured until this run passes.)
   - Any fail → the id stays provisional; the results are still recorded.
 
 Web-search results vary day to day; the 3-repeat majority verdict and same-day paired runs are what make the comparison fair. Thresholds are the #518 spec's choice and are tunable in a future spec without redesigning the procedure.

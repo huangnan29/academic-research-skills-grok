@@ -1,15 +1,16 @@
 {
   "name": "academic-research-suite",
-  "adapter_version": "0.1.0",
+  "adapter_version": "0.2.0",
   "generated_for": "grok-build",
-  "generated_date": "2026-08-24",
+  "generated_date": "2026-08-29",
   "minimum_tested_grok_version": "1.0.5",
   "source_repositories": [
     {
       "name": "academic-research-skills",
       "url": "https://github.com/Imbad0202/academic-research-skills.git",
-      "commit": "2b639c12ee4e7c694a32336cc59dc2616e0d89fe",
-      "suite_version": "3.21.0"
+      "tag": "v3.21.1",
+      "commit": "127ff85e4bbfcdd10b95040537b6c6bd7ad17aeb",
+      "suite_version": "3.21.1"
     },
     {
       "name": "experiment-agent",
@@ -19,17 +20,30 @@
     }
   ],
   "source_overlay": {
-    "derived_from": "ARS-Codex adapter 0.1.26 vendored tree",
-    "workflow_entrypoint_transform": "nested SKILL.md files are named WORKFLOW.md so only the root router registers",
-    "vendored_file_count": 2252,
-    "vendored_tree_sha256": "e7373a14861864ca60aea6c9608d4c06133687a012b4cbbf49e0a6bcfe12a98e"
+    "derived_from": "academic-research-skills v3.21.1 with the audited ARS-Codex WORKFLOW path-compatibility overlay",
+    "workflow_entrypoint_transform": "nested SKILL.md files are named WORKFLOW.md and path-sensitive validators are adapted so only the root Grok router registers",
+    "vendored_file_count": 2284,
+    "vendored_tree_sha256": "b3d74eb1fd79e801cf0b01f38bee954afa5d70f78b58942ac720f07373161e94"
   },
+  "excluded_patterns": [
+    ".git",
+    ".claude",
+    ".claude-plugin",
+    ".gitignore",
+    ".impeccable/",
+    "skills/",
+    "docs/superpowers/",
+    "examples/showcase/*.pdf",
+    "*.log"
+  ],
   "packaging": {
+    "variant": "full-source",
     "type": "single_grok_suite_skill",
     "entrypoint": "SKILL.md",
     "vendored_root": "ars",
     "runtime_adapter_root": "grok",
-    "command_source": "grok/commands"
+    "command_source": "grok/commands",
+    "runtime_minimal_supported": true
   },
   "runtime_defaults": {
     "execution_mode": "inline",

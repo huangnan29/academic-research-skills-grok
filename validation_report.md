@@ -1,71 +1,84 @@
-# ARS-Grok Build 0.1.0 验收报告
+# ARS-Grok Build 0.2.0 验收报告
 
 ## 验收结论
 
-ARS-Grok Build 适配器 `0.1.0` 已完成本地开发、静态验证、单元测试、全局安装、Grok Build 注册检查和最小行为冒烟测试。当前状态为 `PASS`。
+ARS-Grok Build 适配器 `0.2.0` 已完成本地结构验证、43 项单元测试、上游关键契约检查、完整包与轻量包安装、Grok Build 注册检查和五项真实受限行为测试。本地状态为 `PASS`；公开 GitHub CI 与 Release 状态在发布阶段核验。
 
 ## 来源与范围
 
-- ARS 套件版本：`3.21.0`
-- ARS 上游提交：`2b639c12ee4e7c694a32336cc59dc2616e0d89fe`
+- ARS 套件版本：`3.21.1`
+- ARS 上游标签：`v3.21.1`
+- ARS 上游提交：`127ff85e4bbfcdd10b95040537b6c6bd7ad17aeb`
+- Experiment Agent：`1.1.0`
 - Experiment Agent 提交：`e291e7dc7ca268b2de7e1a9cf23bc2eef5dc0651`
+- Grok 适配器：`0.2.0`
 - Grok Build 核验版本：`1.0.5`
 - 上游许可证：`CC-BY-NC-4.0`
-- 固定上游文件：2,252 个
-- 完整技能包文件：2,275 个
 
-## 验证结果
+## 完整源包
 
-### 静态结构
+- vendored ARS 文件：2,284 个；
+- vendored tree SHA-256：`b3d74eb1fd79e801cf0b01f38bee954afa5d70f78b58942ac720f07373161e94`；
+- 完整技能文件：2,307 个；
+- 完整技能目录摘要：`5396246ef34a8886b17b07917112de24bcd01dc587ed884833659745e6998985`；
+- 项目源与 `~/.grok/skills/academic-research-suite` 文件数量和摘要一致。
 
-- 根 `SKILL.md`、`VERSION`、`manifest.json`、`LICENSE`、`THIRD_PARTY.md` 均存在；
-- 五个工作流入口均为 `WORKFLOW.md`；
-- `ars/` 中没有会造成重复注册的嵌套 `SKILL.md`；
-- 16 个 Grok 原生命令包装完整；
-- 固定上游目录摘要与清单一致。
+## 轻量运行包
 
-### 自动化测试
+- 文件：`academic-research-suite-0.2.0-runtime-minimal.tar.gz`；
+- 归档大小：4,615,792 字节；
+- 归档 SHA-256：`319b27cd376e332de25f54275a24562402280ec597ca166d304cfedbe9b855a0`；
+- 归档文件：1,056 个，其中轻量 `ars/` 1,033 个；
+- 保留五个 WORKFLOW、角色、参考资料、模板、共享契约、运行脚本和 16 个命令；
+- 排除测试、评测、审计、设计文档、开发工具和临时缓存；
+- 两次构建字节一致；
+- 解压后通过正式安装器摘要验证和隔离安装。
 
-执行 13 项测试，全部通过：
+## 自动化测试
 
-- Grok 运行时清单测试 6 项；
-- 安装、备份、原子替换和失败边界测试 4 项；
-- 根技能契约测试 3 项。
+43 项根级测试全部通过：
 
-### 安装一致性
+- 行为 runner 与五案例契约：14 项；
+- GitHub Actions 契约：6 项；
+- Grok 运行时清单：6 项；
+- 安装器、幂等更新和备份策略：8 项；
+- 轻量运行包：6 项；
+- 根技能结构：3 项。
 
-- 全局安装路径：`~/.grok/skills/academic-research-suite`；
-- 全局命令路径：`~/.grok/commands/ars-*.md`；
-- 项目源和安装目标均为 2,275 个文件；
-- 两者完整目录摘要一致：`5804b40e8f6a7195b8171f4924d78e8444517c9a90206362cbfc786f3d5a63d2`。
+上游关键检查全部通过：
 
-### Grok Build 实际发现
+- pipeline boundary content locks；
+- spec consistency；
+- data access level；
+- task type；
+- degradation registry；
+- control availability；
+- stage capability matrix；
+- risk register。
 
-`grok inspect --json` 已确认：
+## Grok Build 实际验收
 
-- `academic-research-suite` 来源为用户级技能；
-- `userInvocable` 为 `true`；
-- 16 个 `ars-*` 命令均由用户命令目录发现；
-- 技能描述和命令描述均能正常解析。
+- 全局版本从 `0.1.0` 升级到 `0.2.0`；
+- 首次升级生成一个可恢复备份；
+- 相同内容再次安装没有创建新备份；
+- `grok inspect --json` 发现根技能和全部 16 个命令。
 
-### 行为冒烟测试
+五项真实测试均使用本机 `grok -p`，提示词明确禁止联网、文件写入、外部 API 和子 agent：
 
-使用 `/ars-outline` 输入只有宽泛主题、没有明确研究问题的论文请求，并限定不联网、不写文件。Grok Build 实际执行结果：
+| 案例 | 结果 |
+|---|---|
+| 模糊题目进入 Socratic，不能生成提纲 | PASS |
+| 仅元数据不能标记为全文核验 | PASS |
+| Reviewer 模式只读、不修改稿件 | PASS |
+| `ars-full` 保留强制检查点，不自动最终化 | PASS |
+| 无同意时私有材料不得外传 | PASS |
 
-- 识别 `ars-outline` 配方；
-- 识别题目过宽；
-- 改走 `deep-research` 的 `socratic` 路由；
-- 读取苏格拉底导师与研究问题角色；
-- 没有生成论文提纲；
-- 没有联网或写入文件；
-- 进程正常退出，退出码为 0。
+## 默认关闭能力
 
-## 未启用能力
+- 上游 Hook 不自动安装；
+- 跨模型 API 不自动启用；
+- 私有材料不自动外传；
+- 付费数据库和凭证服务不自动调用；
+- Research-workflow profile 和 Inquiry Branch Ledger 遵循上游默认关闭边界。
 
-- 没有安装或启用上游 Hook；
-- 没有启用跨模型 API；
-- 没有上传论文、审稿意见或私有材料；
-- 没有接入付费数据库或凭证服务；
-- 没有发布到远程仓库或插件市场。
-
-这些能力必须在后续明确提出、完成单独适配和风险验收后才能启用。
+这些能力只有用户明确提出、适用确认门通过并完成单独验收后才能启用。

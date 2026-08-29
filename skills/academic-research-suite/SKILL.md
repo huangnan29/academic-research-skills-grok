@@ -15,14 +15,14 @@ disable-model-invocation: false
 license: CC-BY-NC-4.0
 metadata:
   author: ARS contributors and Grok adapter contributors
-  version: "0.1.0"
-  upstream-suite: "academic-research-skills@2b639c12"
+  version: "0.2.0"
+  upstream-suite: "academic-research-skills@127ff85e"
   short-description: Grok Build 学术研究、论文与审稿工作流
 ---
 
 # ARS-Grok Build
 
-这是 ARS 3.21.0 的 Grok Build 适配入口。上游内容固定在 `ars/`，必须先通过本文件路由，再按当前阶段读取必要文件。
+这是 ARS 3.21.1 的 Grok Build 适配入口。上游内容固定在 `ars/`，必须先通过本文件路由，再按当前阶段读取必要文件。
 
 ## 一、首要规则
 
@@ -113,6 +113,12 @@ Grok 安装器会把 `grok/commands/` 中的包装文件注册到 `~/.grok/comma
 - 最终投稿或对外发布。
 
 Hook 失败采用 Grok 的 fail-open 语义，因此 Hook 只能提供提醒或机械检查，不能单独证明引用、研究伦理、数据或论文完整性已经通过。
+
+### ARS 3.21.1 默认关闭能力
+
+- Research-workflow profile 目前只是离线、默认关闭的契约底座，没有随包提供具体研究家族配置，也没有行为有效性证据；不得自动开启、推断配置或宣称能改善研究结果。需要使用时读取 `ars/shared/contracts/README.md` 的 profile 部分。
+- Inquiry Branch Ledger 只有用户明确启用 `ARS_INQUIRY_LEDGER=1` 时才运行。未启用时不得创建账本、摘要或提示；启用后仍必须保留作者采纳、处置、陈旧原因和项目身份边界。先读取 `ars/academic-pipeline/WORKFLOW.md` 对应章节与共享契约。
+- 上游 3.21.1 对 Codex subscription citation transport 的修复只适用于其限定传输，不会在 Grok 中自动生效，也不能被解释为 Grok 跨模型复核已经验证。
 
 ## 八、角色文件和共享契约
 

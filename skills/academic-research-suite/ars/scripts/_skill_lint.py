@@ -45,8 +45,8 @@ class FrontmatterError(Exception):
     """
 
 
-def _uses_codex_workflow_overlay(root: Path) -> bool:
-    """Return whether *root* is the vendored tree of the Codex package."""
+def _uses_workflow_overlay(root: Path) -> bool:
+    """判断目录是否属于把内部入口改名为 WORKFLOW.md 的适配发行版。"""
     manifest_path = root.parent / "manifest.json"
     if not manifest_path.is_file():
         return False
@@ -54,7 +54,10 @@ def _uses_codex_workflow_overlay(root: Path) -> bool:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return False
-    return isinstance(manifest, dict) and manifest.get("generated_for") == "codex"
+    return isinstance(manifest, dict) and manifest.get("generated_for") in {
+        "codex",
+        "grok-build",
+    }
 
 
 def iter_skill_files(root: Path) -> list[Path]:
@@ -66,7 +69,7 @@ def iter_skill_files(root: Path) -> list[Path]:
     fallback.
     """
     results: list[Path] = []
-    codex_overlay = _uses_codex_workflow_overlay(root)
+    workflow_overlay = _uses_workflow_overlay(root)
     for child in sorted(root.iterdir()):
         if not child.is_dir() or child.name in SKIP_DIRS:
             continue
@@ -75,7 +78,7 @@ def iter_skill_files(root: Path) -> list[Path]:
             results.append(skill_md)
             continue
         workflow_md = child / "WORKFLOW.md"
-        if codex_overlay and workflow_md.is_file():
+        if workflow_overlay and workflow_md.is_file():
             results.append(workflow_md)
     return results
 

@@ -93,6 +93,7 @@ def _make_fake_codex(
     late_raw_after_eof: bytes = b"",
     version: str = "codex-cli 0.147.0",
     status: str = "Logged in using ChatGPT",
+    status_to_stderr: bool = False,
     fail_app_server: bool = False,
     silent_app_server: bool = False,
     hang_after_eof: bool = False,
@@ -114,6 +115,7 @@ import threading
 
 VERSION = {version!r}
 STATUS = {status!r}
+STATUS_TO_STDERR = {status_to_stderr!r}
 EVENTS = {event_rows!r}
 LATE_EVENTS_AFTER_EOF = {late_event_rows!r}
 LATE_RAW_AFTER_EOF = {late_raw_after_eof!r}
@@ -128,7 +130,7 @@ if sys.argv[1:] == ["--version"]:
     print(VERSION)
     raise SystemExit(0)
 if sys.argv[1:] == ["login", "status"]:
-    print(STATUS)
+    print(STATUS, file=sys.stderr if STATUS_TO_STDERR else sys.stdout)
     raise SystemExit(0)
 if not sys.argv[1:] or sys.argv[1] != "app-server":
     raise SystemExit(9)
@@ -302,7 +304,10 @@ def test_runtime_rejects_duplicate_keys_nonfinite_and_surrogate() -> None:
     "fixture,reason",
     [
         ("missing_search.jsonl", "NO_BOUND_SEARCH_RESULTS"),
-        ("wrong_search_shape.jsonl", "NO_BOUND_SEARCH_RESULTS"),
+        # results as a dict is a protocol-shape violation, not a mere absence
+        # of bindable results — it must carry the unambiguous shape code so
+        # bakeoff measure 4 can attribute it (#788 round-6 P2).
+        ("wrong_search_shape.jsonl", "EVENT_STREAM_INVALID"),
         ("multiple_finals.jsonl", "FINAL_OUTPUT_INVALID"),
         ("unbound_source.jsonl", "SOURCE_NOT_IN_SEARCH_RESULTS"),
         ("forbidden_event.jsonl", "FORBIDDEN_TOOL_EVENT"),
@@ -348,6 +353,269 @@ def test_grounded_mismatch_and_model_not_searched_are_closed() -> None:
     )
     assert receipt["verdict"] == "NOT_SEARCHED"
     assert receipt["reason_code"] == "MODEL_RETURNED_NOT_SEARCHED"
+
+
+def _page_open_event(url: str = "https://example.org/toc") -> dict[str, Any]:
+    # codex-cli 0.147.0 emits follow-up page opens as webSearch items with a
+    # non-"search" action type and no query string (#787).
+    return {
+        "method": "item/completed",
+        "params": {
+            "item": {
+                "id": "exec-view-1",
+                "type": "webSearch",
+                "action": {"type": "other"},
+                "results": [{"type": "text_result", "url": url, "title": "TOC"}],
+            }
+        },
+    }
+
+
+def test_page_open_web_search_items_are_skipped_not_stream_fatal() -> None:
+    messages, raw = _fixture("grounded_verified.jsonl")
+    messages = [_page_open_event()] + messages
+    receipt = runtime.parse_app_server_messages(
+        messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+    )
+    assert receipt["verdict"] == "VERIFIED"
+    assert receipt["searched"] is True
+
+    # A page-open's URL never becomes a bindable source.
+    model_output = {
+        "verdict": "VERIFIED",
+        "detail": "Claimed from an opened page, not a search result.",
+        "sources": ["https://example.org/toc"],
+    }
+    messages2, raw2 = _fixture("grounded_verified.jsonl")
+    messages2 = [_page_open_event()] + messages2
+    messages2[2]["params"]["item"]["text"] = json.dumps(model_output)
+    receipt = runtime.parse_app_server_messages(
+        messages2, raw_stream=raw2, request=_request(), model="gpt-5.6"
+    )
+    assert receipt["reason_code"] == "SOURCE_NOT_IN_SEARCH_RESULTS"
+
+    # A stream whose only webSearch items are page opens has no bound search.
+    messages3, raw3 = _fixture("grounded_verified.jsonl")
+    messages3 = [_page_open_event()] + [
+        m for m in messages3 if m.get("params", {}).get("item", {}).get("type") != "webSearch"
+    ]
+    receipt = runtime.parse_app_server_messages(
+        messages3, raw_stream=raw3, request=_request(), model="gpt-5.6"
+    )
+    assert receipt["verdict"] == "NOT_SEARCHED"
+    assert receipt["reason_code"] == "NO_BOUND_SEARCH_RESULTS"
+
+
+def test_all_first_party_non_search_actions_are_skipped() -> None:
+    # The exemption covers exactly the non-search members of the protocol's
+    # closed WebSearchAction set, both spellings.
+    # Bare discriminators are DELIBERATELY accepted: every non-search variant
+    # of the protocol's closed WebSearchAction schema requires only "type"
+    # (url/pattern are nullable optionals per generate-json-schema on
+    # 0.147.0), and a skipped item can never contribute a bound source —
+    # demanding optional fields is the run-1/run-3 false-fatality class.
+    for ok_action in (
+        {"type": "other"},
+        {"type": "openPage", "url": "https://example.org/toc"},
+        {"type": "openPage"},
+        {"type": "open_page", "url": "https://example.org/toc"},
+        {"type": "findInPage", "url": "https://example.org/toc", "pattern": "x"},
+        {"type": "findInPage"},
+        {"type": "find_in_page", "url": "https://example.org/toc", "pattern": "x"},
+    ):
+        messages, raw = _fixture("grounded_verified.jsonl")
+        opener = _page_open_event()
+        opener["params"]["item"]["action"] = ok_action
+        receipt = runtime.parse_app_server_messages(
+            [opener] + messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+        )
+        assert receipt["verdict"] == "VERIFIED", ok_action
+        assert receipt["searched"] is True, ok_action
+
+
+def test_rejected_url_value_under_recognized_key_stays_behavioral() -> None:
+    # A recognized URL key holding an unusable value (http://) is a
+    # value-level outcome, not key-shape drift — it must stay in the
+    # behavior family (#788 round-27 P2).
+    messages, raw = _fixture("grounded_verified.jsonl")
+    for m in messages:
+        item = m.get("params", {}).get("item", {})
+        if item.get("type") == "webSearch":
+            item["results"] = [{"type": "text_result", "url": "http://arxiv.org/abs/1706.03762"}]
+        elif item.get("type") == "agentMessage":
+            item["text"] = json.dumps(
+                {"verdict": "NOT_FOUND", "detail": "No matching work found.", "sources": []}
+            )
+    receipt = runtime.parse_app_server_messages(
+        messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+    )
+    assert receipt["reason_code"] == "NO_BOUND_SEARCH_RESULTS"
+
+
+def test_url_key_drift_fatal_even_when_model_says_not_searched() -> None:
+    # The key-drift determination runs pre-verdict (#788 round-28 P2): a
+    # NOT_SEARCHED answer on a stream whose bound entries carry a renamed URL
+    # key must surface EVENT_STREAM_INVALID, not the model verdict.
+    messages, raw = _fixture("grounded_verified.jsonl")
+    for m in messages:
+        item = m.get("params", {}).get("item", {})
+        if item.get("type") == "webSearch":
+            item["results"] = [{"type": "text_result", "canonical_url": "https://arxiv.org/abs/1706.03762"}]
+        elif item.get("type") == "agentMessage":
+            item["text"] = json.dumps(
+                {"verdict": "NOT_SEARCHED", "detail": "Search unavailable.", "sources": []}
+            )
+    receipt = runtime.parse_app_server_messages(
+        messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+    )
+    assert receipt["reason_code"] == "EVENT_STREAM_INVALID"
+
+
+def test_url_key_drift_in_bound_results_is_stream_fatal() -> None:
+    # A bound search whose non-empty result entries yield no extractable URL
+    # means the provider moved/renamed the URL key — shape drift, not a
+    # zero-hit behavior outcome (#788 round-26 P1).
+    messages, raw = _fixture("grounded_verified.jsonl")
+    for m in messages:
+        item = m.get("params", {}).get("item", {})
+        if item.get("type") == "webSearch":
+            item["results"] = [{"type": "text_result", "canonical_url": "https://arxiv.org/abs/1706.03762"}]
+        elif item.get("type") == "agentMessage":
+            item["text"] = json.dumps(
+                {"verdict": "NOT_FOUND", "detail": "No matching work found.", "sources": []}
+            )
+    receipt = runtime.parse_app_server_messages(
+        messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+    )
+    assert receipt["reason_code"] == "EVENT_STREAM_INVALID"
+
+
+def test_wrong_typed_action_payload_fields_are_stream_fatal() -> None:
+    # A recognized discriminator with a wrong-typed payload field is
+    # protocol drift, not a benign skip (#788 round-15 P2).
+    for bad_action in (
+        {"type": "openPage", "url": 7},
+        {"type": "findInPage", "pattern": 3},
+        {"type": "other", "url": ["x"]},
+        {"type": "search", "queries": [7]},
+        {"type": "search", "query": 9},
+    ):
+        messages, raw = _fixture("grounded_verified.jsonl")
+        bad = _page_open_event()
+        bad["params"]["item"]["action"] = bad_action
+        receipt = runtime.parse_app_server_messages(
+            [bad] + messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+        )
+        assert receipt["reason_code"] == "EVENT_STREAM_INVALID", bad_action
+
+
+def test_unknown_web_search_action_shapes_stay_stream_fatal() -> None:
+    # Only the closed first-party non-search set is exempt; an empty action
+    # object, an unknown type, or a non-dict action fails the stream closed
+    # even when a valid search item is also present (codex round-1 P2 on
+    # #788: the exemption must not become a catch-all).
+    for bad_action in ({}, {"type": "browse"}, "other", {"kind": "other"}):
+        messages, raw = _fixture("grounded_verified.jsonl")
+        bad = _page_open_event()
+        bad["params"]["item"]["action"] = bad_action
+        receipt = runtime.parse_app_server_messages(
+            [bad] + messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+        )
+        assert receipt["verdict"] == "NOT_SEARCHED", bad_action
+        assert receipt["reason_code"] == "EVENT_STREAM_INVALID", bad_action
+
+
+def test_model_not_searched_never_masks_malformed_result_entries() -> None:
+    # Result-entry object shape is validated for EVERY search item — bound or
+    # unbound — before any verdict branch, so a NOT_SEARCHED answer cannot
+    # mask a malformed stream (#788 round-10 P2 + round-11 P1).
+    for unbound_query in (False, True):
+        messages, raw = _fixture("grounded_verified.jsonl")
+        for m in messages:
+            item = m.get("params", {}).get("item", {})
+            if item.get("type") == "webSearch":
+                item["results"] = [42]
+                if unbound_query:
+                    item["query"] = "completely unrelated gardening tips"
+            elif item.get("type") == "agentMessage":
+                item["text"] = json.dumps(
+                    {"verdict": "NOT_SEARCHED", "detail": "Search unavailable.", "sources": []}
+                )
+        receipt = runtime.parse_app_server_messages(
+            messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+        )
+        assert receipt["reason_code"] == "EVENT_STREAM_INVALID", f"unbound={unbound_query}"
+
+
+def test_search_item_id_shape_is_validated_pre_verdict() -> None:
+    # The item id is a consumed field (bindings reference it); a missing or
+    # non-string id is stream-fatal regardless of verdict (#788 round-11 —
+    # instrument fixpoint: every consumed field validated).
+    for bad_id in (None, 7, ""):
+        messages, raw = _fixture("grounded_verified.jsonl")
+        for m in messages:
+            item = m.get("params", {}).get("item", {})
+            if item.get("type") == "webSearch":
+                if bad_id is None:
+                    item.pop("id", None)
+                else:
+                    item["id"] = bad_id
+        receipt = runtime.parse_app_server_messages(
+            messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+        )
+        assert receipt["reason_code"] == "EVENT_STREAM_INVALID", repr(bad_id)
+
+
+def test_not_searched_with_sources_is_an_output_contract_violation() -> None:
+    # NOT_SEARCHED must carry an empty sources array; a populated one fails
+    # closed instead of being silently dropped by the early return (#788
+    # round-9 P2).
+    messages, raw = _fixture("grounded_verified.jsonl")
+    messages[1]["params"]["item"]["text"] = json.dumps(
+        {
+            "verdict": "NOT_SEARCHED",
+            "detail": "Claimed unavailable yet cites a source.",
+            "sources": ["https://arxiv.org/abs/1706.03762"],
+        }
+    )
+    receipt = runtime.parse_app_server_messages(
+        messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+    )
+    assert receipt["reason_code"] == "FINAL_OUTPUT_INVALID"
+
+
+def test_model_not_searched_never_masks_results_shape_drift() -> None:
+    # Same ordering class as the action-shape check: a NOT_SEARCHED final
+    # answer on a stream whose search item carries dict-shaped results must
+    # surface EVENT_STREAM_INVALID, not the model verdict (#788 round-7 P2).
+    messages, raw = _fixture("wrong_search_shape.jsonl")
+    for m in messages:
+        item = m.get("params", {}).get("item", {})
+        if item.get("type") == "agentMessage":
+            item["text"] = json.dumps(
+                {"verdict": "NOT_SEARCHED", "detail": "Search unavailable.", "sources": []}
+            )
+    receipt = runtime.parse_app_server_messages(
+        messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+    )
+    assert receipt["reason_code"] == "EVENT_STREAM_INVALID"
+
+
+def test_model_not_searched_never_masks_action_shape_drift() -> None:
+    # Shape validation runs BEFORE the MODEL_RETURNED_NOT_SEARCHED early
+    # return: a NOT_SEARCHED final answer on a stream carrying an unknown
+    # action shape must surface EVENT_STREAM_INVALID, not the model verdict
+    # (#788 round-3 P2 — measure 4 depends on this ordering).
+    messages, raw = _fixture("grounded_verified.jsonl")
+    bad = _page_open_event()
+    bad["params"]["item"]["action"] = {"type": "browse"}
+    messages[1]["params"]["item"]["text"] = json.dumps(
+        {"verdict": "NOT_SEARCHED", "detail": "Search unavailable.", "sources": []}
+    )
+    receipt = runtime.parse_app_server_messages(
+        [bad] + messages, raw_stream=raw, request=_request(), model="gpt-5.6"
+    )
+    assert receipt["reason_code"] == "EVENT_STREAM_INVALID"
 
 
 def test_positive_without_source_fails_closed() -> None:
@@ -640,13 +908,17 @@ def test_duplicate_completed_item_ids_fail_closed() -> None:
 
 
 def test_wrong_result_url_key_does_not_count_as_grounding() -> None:
+    # Since #788 round-26 this is classified as SHAPE drift: the bound search
+    # returned non-empty entries from which no URL could be extracted, so the
+    # receipt is EVENT_STREAM_INVALID (measure-4 family), not the behavioral
+    # NO_BOUND_SEARCH_RESULTS this test pinned before.
     messages, raw = _fixture("grounded_verified.jsonl")
     result = messages[0]["params"]["item"]["results"][0]
     result["citation"] = result.pop("url")
     receipt = runtime.parse_app_server_messages(
         messages, raw_stream=raw, request=_request(), model="gpt-5.6"
     )
-    assert receipt["reason_code"] == "NO_BOUND_SEARCH_RESULTS"
+    assert receipt["reason_code"] == "EVENT_STREAM_INVALID"
 
 
 def test_multiple_turn_completions_and_failed_turn_fail_closed() -> None:
@@ -706,6 +978,28 @@ def test_detection_requires_model_auth_version_and_exact_subscription_status(tmp
     api_tmp.mkdir()
     api_bin, _ = _make_fake_codex(api_tmp, status="Logged in using an API key")
     env = _base_env(api_bin, home)
+    assert runtime.detect_transport(env)[1]["reason_code"] == "AUTH_NOT_CHATGPT_SUBSCRIPTION"
+
+
+def test_detection_accepts_attestation_on_stderr(tmp_path: Path) -> None:
+    # codex-cli 0.147.0 emits "Logged in using ChatGPT" on stderr in non-TTY
+    # invocation (#785); the exact line must be accepted from either stream,
+    # and a wrong line stays refused on both.
+    home = tmp_path / "custom-codex-home"
+    _make_auth(home)
+    fake_bin, _ = _make_fake_codex(tmp_path, status_to_stderr=True)
+    env = _base_env(fake_bin, home)
+    code, detection = runtime.detect_transport(env)
+    assert code == 0
+    assert detection["available"] is True
+    assert detection["auth_mode"] == "chatgpt_subscription"
+
+    wrong_tmp = tmp_path / "wrong-stderr"
+    wrong_tmp.mkdir()
+    wrong_bin, _ = _make_fake_codex(
+        wrong_tmp, status="Logged in using an API key", status_to_stderr=True
+    )
+    env = _base_env(wrong_bin, home)
     assert runtime.detect_transport(env)[1]["reason_code"] == "AUTH_NOT_CHATGPT_SUBSCRIPTION"
 
 

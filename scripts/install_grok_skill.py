@@ -11,9 +11,11 @@ from __future__ import annotations
 import argparse
 import datetime as _datetime
 import filecmp
+import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 import tempfile
@@ -98,6 +100,39 @@ def _source_command_names(source_dir: Path) -> tuple[str, ...]:
     return tuple(sorted(path.name for path in command_dir.glob("*.md") if path.is_file()))
 
 
+def _directory_summary(directory: Path) -> tuple[int, str]:
+    """按相对路径、NUL 分隔和每个文件的 SHA-256 计算目录摘要。
+
+    这里必须与 ``scripts/validate_skill.py`` 使用完全相同的顺序和拼接规则，
+    这样安装器在写入前就能拒绝摘要不匹配的源包。
+    """
+
+    total_digest = hashlib.sha256()
+    files = sorted(path for path in directory.rglob("*") if path.is_file())
+    for path in files:
+        relative_path = path.relative_to(directory).as_posix().encode("utf-8")
+        file_digest = hashlib.sha256(path.read_bytes()).digest()
+        total_digest.update(relative_path)
+        total_digest.update(b"\0")
+        total_digest.update(file_digest)
+        total_digest.update(b"\n")
+    return len(files), total_digest.hexdigest()
+
+
+def _metadata_version(skill_text: str) -> Optional[str]:
+    """从 SKILL.md 的 YAML 前置元数据中读取 metadata.version。"""
+
+    front_matter = re.match(r"\A---\n(.*?)\n---\n", skill_text, flags=re.DOTALL)
+    if not front_matter:
+        return None
+    version_match = re.search(
+        r"^\s*version:\s*[\"']?([^\"'\s]+)[\"']?\s*$",
+        front_matter.group(1),
+        flags=re.MULTILINE,
+    )
+    return version_match.group(1) if version_match else None
+
+
 def _resolve_source_dir(source_dir: Path | str | None) -> Path:
     """解析源目录；命令行始终使用仓库内固定源目录。"""
 
@@ -117,21 +152,77 @@ def validate_package(source_dir: Path | str | None = None) -> list[str]:
         if not (source / relative_path).is_file():
             errors.append(f"缺少关键文件：{relative_path}")
 
+    version: Optional[str] = None
+    version_path = source / "VERSION"
+    if version_path.is_file():
+        try:
+            version = version_path.read_text(encoding="utf-8").strip()
+            if not version:
+                errors.append("VERSION 为空")
+        except (OSError, UnicodeError):
+            errors.append("VERSION 无法读取")
+
     manifest_path = source / "manifest.json"
+    manifest: Optional[dict[str, object]] = None
     if manifest_path.is_file():
         try:
             with manifest_path.open("r", encoding="utf-8") as manifest_file:
-                manifest = json.load(manifest_file)
-            if not isinstance(manifest, dict):
+                parsed_manifest = json.load(manifest_file)
+            if not isinstance(parsed_manifest, dict):
                 errors.append("manifest.json 不是对象")
-            elif manifest.get("name") != SKILL_NAME:
-                errors.append("manifest.json 的技能名称不匹配")
+            else:
+                manifest = parsed_manifest
+                if manifest.get("name") != SKILL_NAME:
+                    errors.append("manifest.json 的技能名称不匹配")
+                if version is not None and manifest.get("adapter_version") != version:
+                    errors.append("VERSION 与 manifest.json adapter_version 不一致")
         except (OSError, UnicodeError, json.JSONDecodeError):
             errors.append("manifest.json 无法解析")
+
+    skill_path = source / "SKILL.md"
+    if skill_path.is_file():
+        try:
+            skill_text = skill_path.read_text(encoding="utf-8")
+            metadata_version = _metadata_version(skill_text)
+            if metadata_version is None:
+                errors.append("SKILL.md 缺少有效的 metadata.version")
+            elif version is not None and metadata_version != version:
+                errors.append("SKILL.md metadata.version 与 VERSION 不一致")
+        except (OSError, UnicodeError):
+            errors.append("SKILL.md 无法读取")
 
     ars_dir = source / "ars"
     if not ars_dir.is_dir():
         errors.append("ars 目录缺失")
+    else:
+        try:
+            actual_file_count, actual_tree_sha256 = _directory_summary(ars_dir)
+        except (OSError, UnicodeError):
+            actual_file_count = None
+            actual_tree_sha256 = None
+            errors.append("ars/ 目录摘要无法计算")
+
+        source_overlay = manifest.get("source_overlay") if manifest else None
+        if not isinstance(source_overlay, dict):
+            errors.append("manifest.json 缺少有效的 source_overlay")
+        else:
+            expected_file_count = source_overlay.get("vendored_file_count")
+            if not isinstance(expected_file_count, int) or isinstance(
+                expected_file_count, bool
+            ):
+                errors.append("manifest.json source_overlay.vendored_file_count 无效")
+            elif actual_file_count is not None and actual_file_count != expected_file_count:
+                errors.append(
+                    "manifest.json source_overlay.vendored_file_count 与 ars/ 文件数不一致"
+                )
+
+            expected_tree_sha256 = source_overlay.get("vendored_tree_sha256")
+            if not isinstance(expected_tree_sha256, str):
+                errors.append("manifest.json source_overlay.vendored_tree_sha256 无效")
+            elif actual_tree_sha256 is not None and actual_tree_sha256 != expected_tree_sha256:
+                errors.append(
+                    "manifest.json source_overlay.vendored_tree_sha256 与 ars/ 目录摘要不一致"
+                )
 
     for relative_path in REQUIRED_WORKFLOWS:
         if not (source / relative_path).is_file():
@@ -159,6 +250,12 @@ def _installed_errors(target_root: Path, source_dir: Path) -> list[str]:
 
     skill_dir = target_root / "skills" / SKILL_NAME
     errors = validate_package(skill_dir)
+    if skill_dir.is_dir():
+        try:
+            if _directory_summary(source_dir) != _directory_summary(skill_dir):
+                errors.append("已安装技能内容与源技能不一致")
+        except (OSError, UnicodeError):
+            errors.append("无法核对已安装技能内容")
     command_dir = target_root / "commands"
     source_commands = source_dir / "grok" / "commands"
 
@@ -180,6 +277,34 @@ def _installed_errors(target_root: Path, source_dir: Path) -> list[str]:
     return errors
 
 
+def _installation_is_identical(target_root: Path, source_dir: Path) -> bool:
+    """判断已安装技能和 16 个命令是否与源包完全一致。"""
+
+    skill_dir = target_root / "skills" / SKILL_NAME
+    if not skill_dir.is_dir():
+        return False
+    try:
+        if _directory_summary(source_dir) != _directory_summary(skill_dir):
+            return False
+    except (OSError, UnicodeError):
+        return False
+
+    command_dir = target_root / "commands"
+    if not command_dir.is_dir():
+        return False
+
+    source_commands = source_dir / "grok" / "commands"
+    for command_name in EXPECTED_COMMANDS:
+        source_command = source_commands / command_name
+        installed_command = command_dir / command_name
+        try:
+            if not filecmp.cmp(source_command, installed_command, shallow=False):
+                return False
+        except OSError:
+            return False
+    return True
+
+
 def _backup_name() -> str:
     """生成带微秒的本地时间戳，避免连续安装覆盖同一备份目录。"""
 
@@ -198,6 +323,22 @@ def _new_backup_dir(target_root: Path) -> Path:
         suffix += 1
     candidate.mkdir()
     return candidate
+
+
+def _prune_backups(target_root: Path, keep_backups: int) -> None:
+    """安装成功后仅保留按时间戳排序的最新备份。"""
+
+    backups_root = target_root / "backups"
+    if not backups_root.is_dir():
+        return
+    backup_dirs = sorted(
+        path
+        for path in backups_root.iterdir()
+        if path.is_dir() and not path.is_symlink()
+    )
+    stale_backups = backup_dirs if keep_backups == 0 else backup_dirs[:-keep_backups]
+    for backup_dir in stale_backups:
+        _remove_entry(backup_dir)
 
 
 def _backup_existing(
@@ -270,9 +411,12 @@ def _restore_held(hold_root: Path, moved: Iterable[tuple[Path, Path]]) -> None:
 def install_skill(
     target_root: Path | str | None = None,
     source_dir: Path | str | None = None,
+    keep_backups: int = 3,
 ) -> Path:
     """安装技能并返回安装目录；失败时不输出文件内容。"""
 
+    if keep_backups < 0:
+        raise ValidationError("备份保留数量不能为负数")
     source = _resolve_source_dir(source_dir).resolve()
     _raise_if_invalid(source)
 
@@ -282,6 +426,8 @@ def install_skill(
     command_dir = root / "commands"
     if skill_dir == source:
         raise ValidationError("目标目录不能与源技能目录相同")
+    if _installation_is_identical(root, source):
+        return skill_dir
     root.mkdir(parents=True, exist_ok=True)
     (root / "skills").mkdir(parents=True, exist_ok=True)
     command_dir.mkdir(parents=True, exist_ok=True)
@@ -303,8 +449,7 @@ def install_skill(
                 staged_commands / command_name,
             )
 
-        backup_dir, existing_targets = _backup_existing(root, skill_dir, command_dir)
-        del backup_dir  # 备份目录已经落盘，安装过程不需要再次读取它。
+        _, existing_targets = _backup_existing(root, skill_dir, command_dir)
         if existing_targets:
             hold_root, moved_targets = _move_existing_to_hold(root, existing_targets)
 
@@ -319,6 +464,7 @@ def install_skill(
         if errors:
             raise ValidationError("；".join(errors))
 
+        _prune_backups(root, keep_backups)
         if hold_root is not None:
             shutil.rmtree(hold_root, ignore_errors=True)
             hold_root = None
@@ -374,7 +520,26 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="指定 Grok 根目录，主要用于隔离测试",
     )
+    parser.add_argument(
+        "--keep-backups",
+        type=_non_negative_int,
+        default=3,
+        metavar="N",
+        help="安装成功后保留最新的 N 个备份，默认保留 3 个",
+    )
     return parser
+
+
+def _non_negative_int(value: str) -> int:
+    """解析非负整数命令行参数。"""
+
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("必须是非负整数") from error
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("必须是非负整数")
+    return parsed
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -385,7 +550,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 0 if check(target_root=args.target_root) else 1
 
     try:
-        install_skill(target_root=args.target_root)
+        install_skill(target_root=args.target_root, keep_backups=args.keep_backups)
     except ValidationError as error:
         print(f"安装失败：{error}")
         return 1

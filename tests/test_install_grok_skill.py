@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
 from pathlib import Path
 import shutil
 import tempfile
@@ -83,6 +84,110 @@ class InstallGrokSkillTest(unittest.TestCase):
             self.assertEqual(backup_skill_version.read_text(encoding="utf-8"), old_version)
             self.assertEqual(backup_command.read_text(encoding="utf-8"), "旧命令测试内容\n")
             self.assertNotEqual(installed_version.read_text(encoding="utf-8"), old_version)
+
+    def test_identical_install_is_noop_without_backup(self) -> None:
+        """源包与已安装内容相同时应成功返回且不创建备份。"""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            target_root = Path(temporary_directory) / "grok"
+            self.assertEqual(main(["--target-root", str(target_root)]), 0)
+            installed_version = (
+                target_root / "skills" / "academic-research-suite" / "VERSION"
+            )
+            original_mtime = installed_version.stat().st_mtime_ns
+
+            self.assertEqual(main(["--target-root", str(target_root)]), 0)
+
+            self.assertFalse((target_root / "backups").exists())
+            self.assertEqual(installed_version.stat().st_mtime_ns, original_mtime)
+
+    def test_corrupted_vendored_tree_hash_fails_before_install(self) -> None:
+        """上游目录摘要损坏时应在写入目标前拒绝安装。"""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_directory_path = Path(temporary_directory)
+            source_copy = temporary_directory_path / "source"
+            target_root = temporary_directory_path / "grok"
+            shutil.copytree(SOURCE_DIR, source_copy)
+
+            manifest_path = source_copy / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["source_overlay"]["vendored_tree_sha256"] = "0" * 64
+            manifest_path.write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+            errors = validate_package(source_copy)
+            self.assertTrue(any("vendored_tree_sha256" in error for error in errors))
+            with self.assertRaises(ValidationError):
+                install_skill(target_root=target_root, source_dir=source_copy)
+            self.assertFalse(target_root.exists())
+
+    def test_version_mismatch_fails_before_install(self) -> None:
+        """VERSION 与 manifest adapter_version 不一致时应拒绝安装。"""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_directory_path = Path(temporary_directory)
+            source_copy = temporary_directory_path / "source"
+            target_root = temporary_directory_path / "grok"
+            shutil.copytree(SOURCE_DIR, source_copy)
+
+            manifest_path = source_copy / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["adapter_version"] = "999.0.0"
+            manifest_path.write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+            errors = validate_package(source_copy)
+            self.assertTrue(any("adapter_version" in error for error in errors))
+            with self.assertRaises(ValidationError):
+                install_skill(target_root=target_root, source_dir=source_copy)
+            self.assertFalse(target_root.exists())
+
+    def test_keep_backups_retains_only_latest_count(self) -> None:
+        """安装成功后应按参数只保留最新数量的备份。"""
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            target_root = Path(temporary_directory) / "grok"
+            self.assertEqual(main(["--target-root", str(target_root)]), 0)
+            installed_version = (
+                target_root / "skills" / "academic-research-suite" / "VERSION"
+            )
+
+            for index in range(5):
+                old_version = f"旧版本-{index}\n"
+                installed_version.write_text(old_version, encoding="utf-8")
+                self.assertEqual(
+                    main(
+                        [
+                            "--target-root",
+                            str(target_root),
+                            "--keep-backups",
+                            "2",
+                        ]
+                    ),
+                    0,
+                )
+
+            backup_dirs = sorted(
+                path
+                for path in (target_root / "backups").iterdir()
+                if path.is_dir()
+            )
+            self.assertEqual(len(backup_dirs), 2)
+            retained_versions = [
+                (
+                    backup_dir
+                    / "skills"
+                    / "academic-research-suite"
+                    / "VERSION"
+                ).read_text(encoding="utf-8")
+                for backup_dir in backup_dirs
+            ]
+            self.assertEqual(retained_versions, ["旧版本-3\n", "旧版本-4\n"])
 
     def test_missing_key_file_fails_before_install(self) -> None:
         """缺少关键文件时应失败且不写入目标。"""

@@ -1,13 +1,16 @@
 # Academic Research Skills for Grok Build
 
-这是 `academic-research-skills` 的 Grok Build 适配版本。它把 ARS 3.21.0 的深度研究、论文写作、同行评审、研究到论文流水线和实验规划工作流，包装为 Grok Build 可以原生发现的单一 Skill，并提供 16 个 `/ars-*` 命令。
+[![CI](https://github.com/huangnan29/academic-research-skills-grok/actions/workflows/ci.yml/badge.svg)](https://github.com/huangnan29/academic-research-skills-grok/actions/workflows/ci.yml)
+
+这是 `academic-research-skills` 的 Grok Build 适配版本。它把 ARS 3.21.1 的深度研究、论文写作、同行评审、研究到论文流水线和实验规划工作流，包装为 Grok Build 可以原生发现的单一 Skill，并提供 16 个 `/ars-*` 命令。
 
 ## 当前版本
 
-- Grok 适配器：`0.1.0`
-- ARS 套件：`3.21.0`
+- Grok 适配器：`0.2.0`
+- ARS 套件：`3.21.1`
 - 已测试 Grok Build：`1.0.5`
-- 上游 ARS 提交：`2b639c12ee4e7c694a32336cc59dc2616e0d89fe`
+- 上游 ARS 标签：`v3.21.1`
+- 上游 ARS 提交：`127ff85e4bbfcdd10b95040537b6c6bd7ad17aeb`
 - Experiment Agent 提交：`e291e7dc7ca268b2de7e1a9cf23bc2eef5dc0651`
 
 ## 主要能力
@@ -25,8 +28,10 @@
 需要本机已经安装 Grok Build 和 `uv`。
 
 ```bash
+git clone https://github.com/huangnan29/academic-research-skills-grok.git
+cd academic-research-skills-grok
 uv run python scripts/install_grok_skill.py --check
-uv run python scripts/install_grok_skill.py --target-root ~/.grok
+uv run python scripts/install_grok_skill.py --target-root ~/.grok --keep-backups 3
 grok inspect --json
 ```
 
@@ -42,7 +47,31 @@ grok inspect --json
 ~/.grok/commands/ars-*.md
 ```
 
-已有安装会先备份到 `~/.grok/backups/`，再进行原子替换。
+已有安装会先备份到 `~/.grok/backups/`，再进行原子替换。源包与已安装内容完全一致时不重复安装，也不会生成无意义备份。`--keep-backups 0` 可以在安装成功后不保留历史备份。
+
+更新时在仓库中执行：
+
+```bash
+git pull --ff-only
+uv run python scripts/install_grok_skill.py --check
+uv run python scripts/install_grok_skill.py --target-root ~/.grok --keep-backups 3
+```
+
+## 轻量运行包
+
+完整仓库保留上游测试、评测、审计和设计材料。只需要运行 Skill 时，可以构建确定性的轻量包：
+
+```bash
+uv run python scripts/build_runtime_package.py
+```
+
+输出：
+
+```text
+dist/academic-research-suite-0.2.0-runtime-minimal.tar.gz
+```
+
+轻量包保留五个工作流、角色、参考资料、模板、共享契约、运行脚本和 16 个命令；排除上游测试、评测、审计、设计文档和开发工具。包内清单使用独立文件数量与 SHA-256，安装器会在写入前验证。
 
 ## 使用
 
@@ -72,6 +101,14 @@ grok inspect --json
 ```bash
 uv run python scripts/validate_skill.py
 PYTHONDONTWRITEBYTECODE=1 uv run python -m unittest discover -s tests -p 'test_*.py' -v
+uv run python scripts/build_runtime_package.py
+uv run python scripts/run_grok_behavior_smoke.py
+```
+
+最后一条命令默认只列出五个案例，不调用 Grok。需要 Grok 登录的真实行为冒烟测试不会在公开 CI 中自动运行，发布前由维护者显式执行：
+
+```bash
+uv run python scripts/run_grok_behavior_smoke.py --execute --timeout 180 --report /tmp/ars-grok-behavior-report.json
 ```
 
 当前验收结果见 [validation_report.md](validation_report.md)。

@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 配置 uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: 验证技能结构
+        run: uv run python scripts/validate_skill.py
+
+      - name: 运行根目录单元测试
+        run: uv run python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: 执行凭证模式扫描和大文件门
+        shell: bash
+        run: |
+          uv run python - <<'PY'
+          from __future__ import annotations
+
+          import os
+          import re
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          # 该检查只读取 HEAD 的已跟踪文件，不写回仓库，也不输出命中内容。
+          最大文件字节数 = 50 * 1024 * 1024
+          凭证模式 = (
+              ("private-key", re.compile(rb"-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----")),
+              ("github-token", re.compile(rb"\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b")),
+              ("aws-access-key", re.compile(rb"\bAKIA[0-9A-Z]{16}\b")),
+              ("slack-token", re.compile(rb"\bxox[baprs]-[A-Za-z0-9-]{10,}\b")),
+              ("google-api-key", re.compile(rb"\bAIza[0-9A-Za-z_-]{30,}\b")),
+              ("openai-api-key", re.compile(rb"\bsk-[A-Za-z0-9]{20,}\b")),
+              ("npm-token", re.compile(rb"\bnpm_[A-Za-z0-9]{30,}\b")),
+              ("jwt", re.compile(rb"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b")),
+          )
+
+          结果 = subprocess.run(
+              ["git", "ls-tree", "-rz", "--name-only", "HEAD"],
+              check=True,
+              stdout=subprocess.PIPE,
+          )
+          已跟踪路径: list[bytes] = []
+          for 原始路径 in 结果.stdout.split(b"\0"):
+              if not 原始路径:
+                  continue
+              已跟踪路径.append(原始路径)
+
+          大文件数量 = 0
+          for 原始路径 in 已跟踪路径:
+              路径 = Path(os.fsdecode(原始路径))
+              if not 路径.is_symlink() and 路径.is_file():
+                  大文件数量 += 路径.stat().st_size > 最大文件字节数
+          if 大文件数量:
+              print(
+                  f"大文件门失败：发现 {大文件数量} 个超过 50 MiB 的已跟踪文件。",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          命中数量 = 0
+          for 原始路径 in 已跟踪路径:
+              路径 = Path(os.fsdecode(原始路径))
+              if 路径.is_symlink() or not 路径.is_file():
+                  continue
+              数据 = 路径.read_bytes()
+              if any(模式.search(数据) for _, 模式 in 凭证模式):
+                  命中数量 += 1
+
+          if 命中数量:
+              print(
+                  f"凭证模式扫描失败：发现 {命中数量} 个匹配文件（未输出文件内容）。",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          print("只读凭证模式扫描和 50 MiB 大文件门通过。")
+          PY
