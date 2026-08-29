@@ -2,7 +2,7 @@
 
 ## 验收结论
 
-ARS-Grok Build `0.2.1` 已完成本地结构验证、44 项单元测试、完整包安装、runtime-core 隔离安装、Grok 注册检查和五项真实受限行为测试。本地状态为 `PASS`；公开 CI 与 Release 在发布阶段核验。
+ARS-Grok Build `0.2.1` 已完成本地结构验证、44 项单元测试、完整包安装、runtime-core 隔离安装、Grok 注册检查、五项真实受限行为测试和公开 CI。当前状态为 `PASS`。
 
 ## 版本与来源
 
@@ -75,3 +75,12 @@ ARS-Grok Build `0.2.1` 已完成本地结构验证、44 项单元测试、完整
 - 待发布文件不包含常见令牌、私钥或超过 50MiB 的文件；
 - runtime-core 不包含上游测试脚本，但完整源仓库继续保留审计和测试材料；
 - Hook、跨模型 API、付费服务和私有材料外传保持默认关闭。
+
+## 公开持续集成
+
+- 运行：[GitHub Actions 33244638370](https://github.com/huangnan29/academic-research-skills-grok/actions/runs/33244638370)；
+- 提交：`df86fd55a6992df1c62730143720a638dd02c993`；
+- 结构验证：PASS；
+- 44 项测试：PASS；
+- 凭证扫描：PASS；
+- 50MiB 大文件门：PASS。
