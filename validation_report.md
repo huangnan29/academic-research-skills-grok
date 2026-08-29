@@ -76,13 +76,14 @@ ARS-Grok Build 适配器 `0.2.0` 已完成本地结构验证、43 项单元测�
 ## 公开持续集成
 
 - 工作流：`.github/workflows/ci.yml`；
-- 运行：[GitHub Actions 33243764234](https://github.com/huangnan29/academic-research-skills-grok/actions/runs/33243764234)；
-- 提交：`1f9b87dafd380d3f6975e69ef02282acf9b9d71c`；
+- 运行：[GitHub Actions 33243811226](https://github.com/huangnan29/academic-research-skills-grok/actions/runs/33243811226)；
+- 提交：`30a88676c545fc68d0aba36248e2576530781deb`；
 - 结构验证：PASS；
 - 43 项单元测试：PASS；
 - 凭证模式扫描：PASS；
 - 50MiB 大文件门：PASS；
 - Node 24 Actions：PASS，无弃用警告。
+- `main` 分支保护：启用；必须通过 `validate`，禁止强推和删除；仓库管理员保留维护旁路。
 
 ## 默认关闭能力
 
