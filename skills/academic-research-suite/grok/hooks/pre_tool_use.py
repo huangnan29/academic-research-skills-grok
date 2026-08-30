@@ -27,6 +27,7 @@ sys.dont_write_bytecode = True
 原生工具映射 = {
     "search_replace": "Write",
     "run_terminal_command": "Bash",
+    "run_terminal_cmd": "Bash",
 }
 # Grok 顶层 Agent 使用作用域前缀；上游守卫的 manifest 绑定的是原始
 # 下划线名称。只做固定的一对一别名转换，未知名称不会被猜测或升级权限。
@@ -109,8 +110,9 @@ def _适配事件(事件: dict[str, Any]) -> tuple[dict[str, Any], str]:
     原生工具名 = 事件.get("toolName")
     if not isinstance(原生工具名, str) or 原生工具名 not in 原生工具映射:
         raise ValueError("事件工具不在 Hook matcher 范围内")
-    工作区 = _取字符串(事件, ("workspaceRoot", "projectRoot", "cwd"))
-    工作区路径 = 工作区 or os.getcwd()
+    # cwd合法地位于workspaceRoot子目录，不能把两者不同误判为冲突。
+    工作区路径 = next((事件.get(k) for k in ("workspaceRoot", "projectRoot", "cwd")
+                         if isinstance(事件.get(k), str) and 事件[k]), os.getcwd())
     适配事件 = dict(事件)
     适配事件["tool_name"] = 原生工具映射[原生工具名]
     适配事件["tool_input"] = _适配工具输入(
@@ -128,12 +130,26 @@ def _决策(事件: dict[str, Any]) -> dict[str, Any]:
 
     守卫 = _加载上游守卫()
     适配事件, 工作区 = _适配事件(事件)
+    if 适配事件["tool_name"] == "Write":
+        原路径 = 适配事件["tool_input"].get("file_path")
+        if isinstance(原路径, str):
+            目标 = Path(原路径)
+            if not 目标.is_absolute():
+                目标 = Path(适配事件["cwd"]) / 目标
+            目标 = 目标.resolve()
+            # 上游不知道Grok新增的守卫/Agent位置，显式保护这些执行绑定文件。
+            受保护目录 = (技能根目录 / "grok" / "hooks", 技能根目录 / "grok" / "agents")
+            安装根 = 技能根目录.parent.parent
+            托管文件 = {安装根 / "hooks" / "ars-academic-research-suite.json"}
+            托管文件.update(安装根 / "agents" / f"{name}.md" for name in Agent名称映射)
+            if any(目标.is_relative_to(p.resolve()) for p in 受保护目录) or 目标 in {p.resolve() for p in 托管文件}:
+                return {"decision": "deny", "reason": "ARS Grok执行绑定文件受保护，禁止通过研究工具改写。"}
     清单 = 守卫._load_manifest()
     决定 = 守卫.evaluate_decision(
         适配事件,
         清单,
         工作区,
-        str(技能根目录),
+        str(技能根目录 / "ars"),
     )
     if not isinstance(决定, dict) or 决定.get("decision") != "deny":
         return {"decision": "allow"}

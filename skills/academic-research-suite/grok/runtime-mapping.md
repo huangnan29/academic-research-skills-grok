@@ -4,6 +4,12 @@
 
 ## 运行模式
 
+### 1.0.13 复验边界（优先于下文设计期说明）
+
+实际工具表才是能力证据。直接`grok --agent`的init仍出现MCP元工具及配置服务，不能根据四项frontmatter工具名断言完全隔离。`mcpInheritance: none`仅是子Agent继承设置。完整流水线先确认真实`spawn_subagent`可用；若缺失，不得用shell占位命令、重复搜索配置或父Agent代写冒充成功，应披露限制并回退或停止。
+
+Hook同时接受`run_terminal_command`和内部别名`run_terminal_cmd`；项目`workspaceRoot`和子目录`cwd`允许不同，不能混为一个冲突字段。原生Agent状态可发现、可启动与完整交接通过是三个不同验收层级。
+
 | 模式 | 默认状态 | 执行位置 | 允许的运行时行为 |
 | --- | --- | --- | --- |
 | inline | 启用 | 当前 grok-build 会话 | 读取一个工作流的 WORKFLOW.md 和当阶段所需的角色文件，在当前会话中依次执行；不自动创建子 agent。 |

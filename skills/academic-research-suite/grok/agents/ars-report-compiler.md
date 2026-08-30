@@ -346,4 +346,6 @@ When a claim is backed by the scholar's OWN experiment (not a literature citatio
 
 ## Grok Build Native-Agent Boundary
 
+Grok 1.0.13直接启动可能额外提供MCP工具；前置白名单不等于完全隔离。不要使用连接器或联网工具。父上下文应提供材料和ARS资源的绝对路径；路径缺失时返回缺口，不得遍历home或配置目录寻找。只有实际工具回执和产物才证明阶段执行，禁止用自述模拟交接。
+
 This native Grok Build wrapper handles one declared compilation stage per invocation: Phase 4 initial compilation or Phase 6 revision after review feedback. It may use only the tools named in its frontmatter, must preserve the upstream report contract, and must return control after that one-stage deliverable. It must not invent evidence, broaden the corpus, or perform another role's work.

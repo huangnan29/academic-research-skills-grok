@@ -4,7 +4,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "^(search_replace|run_terminal_command)$",
+        "matcher": "^(search_replace|run_terminal_command|run_terminal_cmd)$",
         "hooks": [
           {
             "type": "command",

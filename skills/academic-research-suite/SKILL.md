@@ -15,7 +15,7 @@ disable-model-invocation: false
 license: CC-BY-NC-4.0
 metadata:
   author: ARS contributors and Grok adapter contributors
-  version: "0.3.0"
+  version: "0.3.1"
   upstream-suite: "academic-research-skills@127ff85e"
   short-description: Grok Build 学术研究、论文与审稿工作流
 ---
@@ -85,7 +85,9 @@ Grok 安装器会把 `grok/commands/` 中的包装文件注册到 `~/.grok/comma
 
 普通单功能请求默认在当前会话内联执行。安装包同时提供四个命名空间化原生入口：`ars-deep-research`、`ars-academic-paper`、`ars-paper-reviewer`、`ars-academic-pipeline`；它们只负责更精确的发现和路由，上游正文仍以 `ars/*/WORKFLOW.md` 为唯一来源。
 
-用户显式调用 `ars-full` 或 `ars-academic-pipeline` 时，若三个原生 Agent 已安装，可以按流水线阶段顺序调用：Phase 1 使用 `ars-research-architect`，Phase 3 使用 `ars-synthesis`，Phase 4 或 Phase 6 使用 `ars-report-compiler`。这三类调用属于完整流水线内部的顺序阶段执行，不等于开启并行团队；Agent 缺失时回退为内联角色提示并披露回退。
+用户显式调用 `ars-full` 或 `ars-academic-pipeline` 时，只有当前真实工具表提供 `spawn_subagent` 且能解析原生类型，才可按阶段顺序调用：Phase 1 使用 `ars-research-architect`，Phase 3 使用 `ars-synthesis`，Phase 4 或 Phase 6 使用 `ars-report-compiler`。文件已安装不证明当前会话可调度。工具或类型缺失时明确披露并按用户允许的范围回退内联；若用户要求必须原生调用则停止。禁止用终端打印、伪造回执或父Agent代写冒充调度成功。
+
+Grok 1.0.13复验发现：直接通过 `grok --agent` 启动时，工具表仍可包含 `search_tool`、`use_tool` 和已配置的MCP工具。`mcpInheritance: none` 是子Agent继承配置，不能宣称它保证直接启动完全隔离。不得主动使用这些额外能力；涉及私有材料时必须依据真实工具表和宿主权限单独确认，不能只相信前置白名单。
 
 除上述三个受限阶段 Agent 外，只有用户明确要求“并行”“委派”“多 agent”“完整运行时”，才读取 `grok/full-runtime-manifest.json` 并启用其他 `spawn_subagent` 调度。Grok Build 子 agent 最大深度为一层，子 agent 不得继续创建子 agent。
 

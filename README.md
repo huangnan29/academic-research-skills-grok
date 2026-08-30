@@ -6,9 +6,10 @@
 
 ## 当前版本
 
-- Grok 适配器：`0.3.0`
+- 本分支候选适配器：`0.3.1`，尚未发布；稳定版仍为 `v0.3.0`
 - ARS 套件：`3.21.1`
 - 已测试 Grok Build：`1.0.5`
+- Grok `1.0.13` 已进行轨迹复验，但直接Agent的MCP完全隔离未通过，详见验收报告。
 - 上游 ARS 标签：`v3.21.1`
 - 上游 ARS 提交：`127ff85e4bbfcdd10b95040537b6c6bd7ad17aeb`
 - Experiment Agent 提交：`e291e7dc7ca268b2de7e1a9cf23bc2eef5dc0651`
@@ -50,7 +51,7 @@ grok inspect --json
 ~/.grok/commands/ars-*.md
 ```
 
-安装器默认安装根 Skill、四个原生 Skill、16 个命令和三个原生 Agent；Hook 默认不安装。已有安装会先备份到 `~/.grok/backups/`，再进行原子替换。源包与已安装内容完全一致时不重复安装，也不会生成无意义备份。`--keep-backups 0` 可以在安装成功后不保留历史备份。
+安装器默认安装根 Skill、四个原生 Skill、16 个命令和三个原生 Agent；Hook 默认不安装。已有安装会先备份到 `~/.grok/backups/`，再进行原子替换。源包与已安装内容完全一致时不重复安装，也不会生成无意义备份。保留数量仅适用于带本安装器所有权标记的新备份；旧版无标记备份和其他目录不会自动清理。`--keep-backups 0` 也只清理上述可确认归属的备份。
 
 显式启用本地写入范围守卫：
 
@@ -85,7 +86,7 @@ uv run python scripts/build_runtime_package.py
 输出：
 
 ```text
-dist/academic-research-suite-0.3.0-runtime-core.tar.gz
+dist/academic-research-suite-0.3.1-runtime-core.tar.gz
 ```
 
 核心包保留五个工作流、角色、参考资料、模板、共享契约、非测试运行脚本和 16 个命令；排除上游测试脚本、测试目录、评测、审计、设计文档和开发资料。包内清单标记为 `runtime-core`，使用独立文件数量与 SHA-256，安装器会在写入前验证。完整审计与测试材料仍保留在 GitHub 源仓库中。
@@ -114,7 +115,18 @@ dist/academic-research-suite-0.3.0-runtime-core.tar.gz
 - `ars-synthesis`：Phase 3证据综合；
 - `ars-report-compiler`：Phase 4或Phase 6报告编译。
 
-三个Agent只允许读取、检索和结构化写入，不允许终端、联网、MCP或递归子Agent。其他上游角色继续按Claude原版默认方式作为WORKFLOW内提示词执行。
+三个Agent的前置工具白名单只声明读取、检索和结构化写入；这不是宿主沙箱保证。Grok 1.0.13的直接`--agent`模式仍暴露MCP入口及配置工具，因此本版本明确标记该隔离限制。其他上游角色继续作为WORKFLOW内提示词执行；缺少真实调度工具时禁止用父Agent代写冒充子Agent成果。
+
+## 真实运行时验收
+
+旧版九项KEY=VALUE测试只属于输出格式冒烟，不能证明权限、没有外传或完成流水线。新测试从NDJSON的init工具表、tool_use/tool_result和文件变化取证，默认不调用模型：
+
+```bash
+uv run python scripts/run_grok_runtime_acceptance.py
+uv run python scripts/run_grok_runtime_acceptance.py --execute --case route:research
+```
+
+测试只使用合成夹具，但模型调用仍经过当前Grok服务，并非离线模型。工具不匹配、超时、无实际Skill读取、无阶段产物都会保留失败或未验证状态，不会用模型自述升级为通过。
 
 ## 安全边界
 

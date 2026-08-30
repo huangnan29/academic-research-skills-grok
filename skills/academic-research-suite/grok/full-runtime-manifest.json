@@ -1,5 +1,12 @@
 {
   "schema_version": "1.0",
+  "observed_runtime_limits": {
+    "grok_version": "1.0.13",
+    "direct_agent_extra_mcp_tools": true,
+    "strict_four_tool_surface_verified": false,
+    "native_phase_requires_actual_spawn_tool": true,
+    "self_report_is_execution_evidence": false
+  },
   "adapter": {
     "name": "academic-research-suite-grok-build",
     "package": "academic-research-suite",

@@ -25,6 +25,18 @@ from scripts.install_grok_skill import (
 class InstallGrokSkillTest(unittest.TestCase):
     """验证检查、安装、备份和失败边界。"""
 
+    def test_备份清理不能删除无所有者标记的目录(self):
+        from scripts.install_grok_skill import _new_backup_dir, _prune_backups
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            other = root / "backups" / "other-project"
+            other.mkdir(parents=True)
+            (other / "data.txt").write_text("必须保留", encoding="utf-8")
+            own = _new_backup_dir(root)
+            _prune_backups(root, 0)
+            self.assertFalse(own.exists())
+            self.assertEqual((other / "data.txt").read_text(encoding="utf-8"), "必须保留")
+
     def test_check_only_does_not_write(self) -> None:
         """--check 应验证源包但不创建目标目录。"""
 
@@ -87,7 +99,7 @@ class InstallGrokSkillTest(unittest.TestCase):
             self.assertNotIn("SessionStart", hook["hooks"])
             self.assertEqual(
                 hook["hooks"]["PreToolUse"][0]["matcher"],
-                "^(search_replace|run_terminal_command)$",
+                "^(search_replace|run_terminal_command|run_terminal_cmd)$",
             )
             pre_tool_command = hook["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
             self.assertIn("pre_tool_use.py", pre_tool_command)

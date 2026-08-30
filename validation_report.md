@@ -1,110 +1,64 @@
-# ARS-Grok Build 0.3.0 验收报告
+# ARS-Grok Build 0.3.1 候选验收报告
 
-## 验收结论
+## 结论
 
-ARS-Grok Build `0.3.0` 已完成本地静态验证、70项单元测试、runtime-core隔离安装、全局安装、Grok原生发现、三个Agent直接启动、PreToolUse Hook受限事件和九项真实Skill行为测试。本地状态为`PASS`；公开CI与Release在发布阶段核验。
+状态为 **PARTIAL（部分通过，未发布）**。候选代码的125项本地测试、静态验证和核心包隔离安装通过；真实Grok 1.0.13测试发现直接Agent工具表超出白名单，评审与三阶段交接未完成。因此不合并main、不覆盖稳定v0.3.0、不更新全局安装、不发布新Release。
 
-## 版本与来源
+## 基线和证据边界
 
-- Grok适配器：`0.3.0`
-- ARS：`3.21.1`
-- ARS提交：`127ff85e4bbfcdd10b95040537b6c6bd7ad17aeb`
-- Experiment Agent：`1.1.0`
-- Grok Build：`1.0.5`
-- 许可证：`CC-BY-NC-4.0`
+- 验证日期：2026-08-30。
+- 实际Grok：1.0.13（5e9a58528b76）。
+- 真实运行加载的已安装适配器：0.3.0；候选源码版本：0.3.1。
+- ARS固定3.21.1，上游提交127ff85e4bbfcdd10b95040537b6c6bd7ad17aeb，未修改ars正文。
+- 真实测试仅使用软件验收合成材料，不是真实论文质量认证。模型推理仍使用Grok服务；没有把合成夹具描述为离线模型运行。
+- 候选源码尚未完成真实宿主集成验证，不能借用稳定版运行结果作为候选版全面通过的证据。
+- 旧版九项带期望标记的测试只作为输出格式冒烟，不作为权限或学术完整性证明。
 
-## 原生运行面
+## 本地修复与验证
 
-- 总入口：`academic-research-suite`；
-- 原生Skill：`ars-deep-research`、`ars-academic-paper`、`ars-paper-reviewer`、`ars-academic-pipeline`；
-- 原生Agent：`ars-research-architect`、`ars-synthesis`、`ars-report-compiler`；
-- Slash Commands：16个；
-- 十三个轻任务命令：`effort: medium`；
-- 三个重任务命令：继承当前模型和推理强度；
-- Grok实际发现：4个原生Skill、3个原生Agent、16个命令，无命名冲突。
+1. Hook正确区分workspaceRoot与子目录cwd；增加run_terminal_cmd别名；保护Grok守卫与三个Agent执行绑定文件。
+2. 备份清理仅处理带本安装器所有权标记的目录；保留旧版无标记备份及其他项目目录。
+3. 新增严格轨迹解析：要求init、工具请求/回执配对及正常终止；缺少回执内容、畸形字段和空文本不能冒充读取证据。
+4. 新增八项运行案例，默认只列出，显式执行才调用Grok；轨迹与材料目录分开，派生轨迹去除思考块和连接器配置。
+5. 125项本地单元测试通过；独立离线复核确认两项验收器缺陷已修复。
+6. 核心包构建及正式安装器临时目录安装通过，Hook未启用。
 
-三个Agent均使用`model: inherit`、`mcpInheritance: none`，工具白名单只包含`read_file`、`search_replace`、`grep`、`list_dir`，不授予终端、网络、MCP或递归子Agent。三个Agent通过`grok --agent`直接启动测试。
+核心包为本地候选产物，未上传Release：3,126,522字节，SHA-256为
+`e0e2403e477834e0eaf3eb5bc8ee318e093f88c1568415907790cb655537092c`。
 
-## Hook
+Hook合成事件测试通过不代表Grok 1.0.13真实Hook集成通过。Hook继续默认关闭、异常fail-open，不能替代权限系统。
 
-- 托管文件：`hooks/ars-academic-research-suite.json`；
-- 事件：仅`PreToolUse`；
-- matcher：仅`search_replace|run_terminal_command`；
-- 类型：仅本地command，不包含HTTP；
-- 输入：适配Grok camelCase字段和原生工具名；
-- 决策：复用上游`ars_write_scope_guard.py`；
-- 默认状态：未安装；
-- 显式启用：安装器`--enable-hooks`；
-- 显式禁用：安装器`--disable-hooks`；
-- 失败边界：fail-open，不替代正常权限或学术完整性门。
+## 真实运行结果
 
-Grok 1.0.5会忽略SessionStart被动Hook的stdout，无法移植Claude会话公告上下文；本版本明确记录该能力缺口，没有交付无效的SessionStart公告Hook。
+| 验证项 | 结果 | 证据与限制 |
+|---|---|---|
+| 三个Agent严格四工具表 | FAIL（3/3） | init额外暴露search_tool、use_tool及两个已配置连接器工具；没有实际调用这些额外工具 |
+| 研究自然语言入口 | PASS | 对应Skill/WORKFLOW成功读取非空文本、正常结束、无文件变化 |
+| 摘要写作自然语言入口 | PASS | 对应文件成功读取、正常结束、无文件变化；夹具算术为60%、75%、15个百分点 |
+| 同行评审自然语言入口 | TIMEOUT | 240秒未正常结束；部分读取记录不能算完整通过 |
+| 完整流水线自然语言入口 | PASS | 成功读取正确入口并结束；仅证明入口加载，不证明十阶段执行成功 |
+| 三Agent文件交接（修正参数） | TIMEOUT | 180秒后停止；仅首个Agent启动回执和第一阶段文件，缺后两阶段及完成回执 |
+| 旧参数交接尝试 | CANCELLED | 主动停止重复测试；不用于宣称交接成功或失败 |
 
-实际Hook验收：
+直接`grok --agent`暴露连接器工具说明`mcpInheritance: none`不能被解释为直接启动时的完整工具隔离。测试另外配置MCP拒绝规则，但这也不能证明Agent自身已隔离。
 
-- Grok发现托管PreToolUse Hook：PASS；
-- 主会话普通写入允许：PASS；
-- research architect越界写入拒绝：PASS；
-- research architect终端调用拒绝：PASS；
-- 损坏输入和环境缺失fail-open：PASS；
-- 验收结束后恢复默认关闭：PASS。
+修正参数的流水线实际出现`spawn_subagent`请求及首个Agent后台启动回执。第一阶段文件存在，但事件不足以证明完整写入归属；不得把该文件当作三阶段交接完成。测试没有提升权限强行通过。
 
-## 完整包与runtime-core
+## 证据保存与复算
 
-- vendored ARS：2,284个文件；
-- vendored tree SHA-256：`b3d74eb1fd79e801cf0b01f38bee954afa5d70f78b58942ac720f07373161e94`；
-- 完整技能：2,316个文件；
-- 完整技能摘要：`4b7d84918fc442151235768221c4913b011d56166efa754eb4392f4d5830a221`；
-- 项目源与全局安装摘要一致；
-- runtime-core：`academic-research-suite-0.3.0-runtime-core.tar.gz`；
-- runtime-core大小：3,124,715字节；
-- runtime-core SHA-256：`686434ecdb60eee734e001a5535f1725d25a3b0b18ef563f0a3d7f2beb5ef8ef`；
-- runtime-core文件：827个，其中core `ars/` 795个；
-- scripts测试文件残留：0；
-- runtime-core包含4个Skill、3个Agent、16个命令和Hook源文件；
-- 正式安装器隔离安装默认安装Agent但不启用Hook：PASS。
+公开摘要见 [runtime_evidence_report.json](runtime_evidence_report.json)，包含逐案例状态、原始轨迹哈希、派生轨迹哈希和产物哈希；不包含思考文本、凭证、真实稿件或本机连接配置。
 
-## 自动化测试
+本地原始验收报告与去思考派生轨迹目录：
 
-70项根级测试全部通过：
+- `/tmp/ars-grok-v031-acceptance-a/`
+- `/tmp/ars-grok-v031-pipeline-corrected/`
 
-- 原有安全与路由行为契约；
-- 四个原生Skill和命令分层；
-- 三个原生Agent同步与权限；
-- PreToolUse Hook允许、拒绝、fail-open；
-- 安装器默认、Hook启停、备份和幂等；
-- runtime-core确定性构建与安装；
-- CI、运行时清单和根技能结构。
+首轮运行中验收器仍在修订，公开摘要已用最终解析器重新判定现存派生轨迹；原报告保持不变。临时目录可能被系统清理，公开摘要不冒充可独立复算的完整原始证据包。
 
-## 真实行为
+## 后续验证门
 
-九项`grok -p`测试均禁止联网、写文件、外部API和子Agent：
-
-| 案例 | 结果 |
-|---|---|
-| 模糊题目进入Socratic | PASS |
-| 仅元数据不标记全文核验 | PASS |
-| Reviewer保持只读 | PASS |
-| `ars-full`保留强制检查点 | PASS |
-| 无同意时私有材料不外传 | PASS |
-| `ars-deep-research`原生路由 | PASS |
-| `ars-academic-paper`原生路由 | PASS |
-| `ars-paper-reviewer`原生路由 | PASS |
-| `ars-academic-pipeline`原生路由 | PASS |
-
-## 默认关闭能力
-
-- PreToolUse Hook默认关闭；
-- 跨模型API默认关闭；
-- 私有材料外传默认关闭；
-- 付费服务和凭证调用默认关闭；
-- 其他三十九个上游角色继续内联，不注册为额外Agent。
-
-## 公开持续集成
-
-- 运行：[GitHub Actions 33272111427](https://github.com/huangnan29/academic-research-skills-grok/actions/runs/33272111427)；
-- 提交：`cfe8053f4e4ba47342ca8d0503145122d1eceaca`；
-- 静态验证：PASS；
-- 70项单元测试：PASS；
-- 凭证扫描：PASS；
-- 50MiB大文件门：PASS。
+- 确认真实子Agent的工具隔离，或明确缩减平台支持承诺。
+- 让三个Agent实际顺序完成，核对前阶段文件读取、写入归属、全部产物和正常终止。
+- 在隔离环境完成候选版真实Hook宿主测试；不自动启用全局Hook。
+- 重跑评审案例及候选版四条自然语言路由；不得仅延长时间就宣布通过。
+- 候选分支CI另行核验；CI静态通过也不能消除上述真实运行缺口。

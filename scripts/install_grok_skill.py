@@ -181,8 +181,8 @@ def _hook_template_errors(source_dir: Path) -> list[str]:
             if not isinstance(item, dict):
                 errors.append(f"PreToolUse[{index}] Hook 条目必须是对象")
                 continue
-            if item.get("matcher") != "^(search_replace|run_terminal_command)$":
-                errors.append("PreToolUse matcher 必须只匹配 search_replace|run_terminal_command")
+            if item.get("matcher") != "^(search_replace|run_terminal_command|run_terminal_cmd)$":
+                errors.append("PreToolUse matcher 必须只匹配 search_replace|run_terminal_command|run_terminal_cmd")
             nested = item.get("hooks")
             if not isinstance(nested, list) or not nested:
                 errors.append(f"PreToolUse[{index}] 缺少嵌套 Hook")
@@ -525,7 +525,24 @@ def _new_backup_dir(target_root: Path) -> Path:
         candidate = backups_root / f"{_backup_name()}-{suffix}"
         suffix += 1
     candidate.mkdir()
+    (candidate / ".ars-grok-backup.json").write_text(
+        json.dumps({"owner": SKILL_NAME, "schema_version": 1}) + "\n", encoding="utf-8"
+    )
     return candidate
+
+
+def _owned_backup(path: Path) -> bool:
+    """只清理本安装器带明确标记的备份，旧备份和其他项目目录保留。"""
+    if path.is_symlink() or not path.is_dir():
+        return False
+    marker = path / ".ars-grok-backup.json"
+    if marker.is_symlink():
+        return False
+    try:
+        data = json.loads(marker.read_text(encoding="utf-8"))
+        return isinstance(data, dict) and data.get("owner") == SKILL_NAME and data.get("schema_version") == 1
+    except (OSError, ValueError):
+        return False
 
 
 def _prune_backups(target_root: Path, keep_backups: int) -> None:
@@ -537,7 +554,7 @@ def _prune_backups(target_root: Path, keep_backups: int) -> None:
     backup_dirs = sorted(
         path
         for path in backups_root.iterdir()
-        if path.is_dir() and not path.is_symlink()
+        if _owned_backup(path)
     )
     stale_backups = backup_dirs if keep_backups == 0 else backup_dirs[:-keep_backups]
     for backup_dir in stale_backups:

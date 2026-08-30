@@ -138,13 +138,38 @@ class GrokHookTest(unittest.TestCase):
         self.assertNotIn("https://", 序列化)
         self.assertEqual(
             配置["hooks"]["PreToolUse"][0]["matcher"],
-            "^(search_replace|run_terminal_command)$",
+            "^(search_replace|run_terminal_command|run_terminal_cmd)$",
         )
         self.assertNotIn("SessionStart", 配置["hooks"])
         self.assertEqual(
             配置["hooks"]["PreToolUse"][0]["hooks"][0]["type"],
             "command",
         )
+
+    def test_工作目录为工作区子目录仍允许本阶段相对写入(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cwd = root / "phase1_blueprint"
+            cwd.mkdir()
+            result = 运行Hook(PreToolUse脚本, {
+                "toolName": "search_replace", "toolInput": {"file_path": "notes.md"},
+                "workspaceRoot": str(root), "cwd": str(cwd), "subagentType": "ars-research-architect",
+            })
+            self.assertEqual(result["decision"], "allow")
+
+    def test_主会话不能改写Grok守卫本体(self):
+        result = 运行Hook(PreToolUse脚本, {
+            "toolName": "search_replace", "toolInput": {"path": str(PreToolUse脚本)},
+            "workspaceRoot": str(项目根目录), "cwd": str(项目根目录),
+        })
+        self.assertEqual(result["decision"], "deny")
+
+    def test_终端内部别名仍被拒绝(self):
+        result = 运行Hook(PreToolUse脚本, {
+            "toolName": "run_terminal_cmd", "toolInput": {"command": "printf TEST"},
+            "subagentType": "ars-research-architect",
+        })
+        self.assertEqual(result["decision"], "deny")
 
 
 if __name__ == "__main__":

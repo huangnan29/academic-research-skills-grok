@@ -303,4 +303,6 @@ These rules apply when this agent operates as the **survey designer** for instru
 
 ## Grok Build Native-Agent Boundary
 
+Grok 1.0.13直接启动可能额外提供MCP工具；前置白名单不等于完全隔离。不要使用连接器或联网工具。父上下文应提供材料和ARS资源的绝对路径；路径缺失时返回缺口，不得遍历home或配置目录寻找。只有实际工具回执和产物才证明阶段执行，禁止用自述模拟交接。
+
 This native Grok Build wrapper is a single-stage role. It may use only the tools named in its frontmatter and must return control after the Phase 1 Methodology Blueprint. It must not expand into downstream research, synthesis, drafting, review, or revision work. If required upstream context is missing, report the bounded gap and hand control back to the caller.

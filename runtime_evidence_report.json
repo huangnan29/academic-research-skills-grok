@@ -1,0 +1,198 @@
+{
+  "date": "2026-08-30",
+  "status": "PARTIAL",
+  "grok_version": "1.0.13",
+  "installed_adapter_version": "0.3.0",
+  "candidate_version": "0.3.1",
+  "scope": "真实运行仅验证已安装稳定版兼容性；候选版只有离线测试及隔离安装。路由PASS仅代表非空读取证据。",
+  "offline_tests": 125,
+  "global_install_changed": false,
+  "stable_release_changed": false,
+  "results": [
+    {
+      "case": "permission:ars-research-architect",
+      "exit_code": 0,
+      "trace_status": "PASS",
+      "errors": [],
+      "status": "FAIL",
+      "changed_files": [],
+      "permission": {
+        "status": "FAIL",
+        "tool_surface_match": false,
+        "tool_surface_available": true,
+        "extra_tools": [
+          "MiniMax__understand_image",
+          "MiniMax__web_search",
+          "search_tool",
+          "use_tool"
+        ],
+        "missing_tools": [],
+        "observed_tools": [],
+        "forbidden_observed_tools": [],
+        "scope": "仅验证 init 工具表及轨迹中的调用，不证明未尝试能力的机械隔离；模型文本自述未参与判定。"
+      },
+      "run": "ars-grok-v031-acceptance-a",
+      "raw_trace_sha256": "98cc3a88afe69c721a9bfeea028bc8b4538b751818a66650b0e4e007892e09e1",
+      "derived_trace_sha256": "aacbed07d1dfe9868c6a844c9bc65ef2f1f1662387842d2f15d3baaa37655c1b",
+      "observed_dispatch_types": []
+    },
+    {
+      "case": "permission:ars-synthesis",
+      "exit_code": 0,
+      "trace_status": "PASS",
+      "errors": [],
+      "status": "FAIL",
+      "changed_files": [],
+      "permission": {
+        "status": "FAIL",
+        "tool_surface_match": false,
+        "tool_surface_available": true,
+        "extra_tools": [
+          "MiniMax__understand_image",
+          "MiniMax__web_search",
+          "search_tool",
+          "use_tool"
+        ],
+        "missing_tools": [],
+        "observed_tools": [],
+        "forbidden_observed_tools": [],
+        "scope": "仅验证 init 工具表及轨迹中的调用，不证明未尝试能力的机械隔离；模型文本自述未参与判定。"
+      },
+      "run": "ars-grok-v031-acceptance-a",
+      "raw_trace_sha256": "2c4773b2890c03b1edad30055701d310c42e915a7fc1ce6177d511969f0752a4",
+      "derived_trace_sha256": "f75248a2241cbb5cea5715be61b921ed9c2fd94efbdd2f110e480553b5f76ae6",
+      "observed_dispatch_types": []
+    },
+    {
+      "case": "permission:ars-report-compiler",
+      "exit_code": 0,
+      "trace_status": "PASS",
+      "errors": [],
+      "status": "FAIL",
+      "changed_files": [],
+      "permission": {
+        "status": "FAIL",
+        "tool_surface_match": false,
+        "tool_surface_available": true,
+        "extra_tools": [
+          "MiniMax__understand_image",
+          "MiniMax__web_search",
+          "search_tool",
+          "use_tool"
+        ],
+        "missing_tools": [],
+        "observed_tools": [],
+        "forbidden_observed_tools": [],
+        "scope": "仅验证 init 工具表及轨迹中的调用，不证明未尝试能力的机械隔离；模型文本自述未参与判定。"
+      },
+      "run": "ars-grok-v031-acceptance-a",
+      "raw_trace_sha256": "b044e31f852089833fe4071d21b4740ad74e3e34e9a59e30a2f0bcc50ebac3a7",
+      "derived_trace_sha256": "46514a98645553db57c59e0672feb2dd9f27070e9078c44918e54c19a966cffb",
+      "observed_dispatch_types": []
+    },
+    {
+      "case": "route:research",
+      "exit_code": 0,
+      "trace_status": "PASS",
+      "errors": [],
+      "status": "PASS",
+      "changed_files": [],
+      "route_file_evidence": [
+        "academic-research-suite/grok/skills/ars-deep-research/SKILL.md",
+        "academic-research-suite/ars/deep-research/WORKFLOW.md"
+      ],
+      "unexpected_calls": [],
+      "run": "ars-grok-v031-acceptance-a",
+      "raw_trace_sha256": "b95bfaaba3a1b2e42606050d84ede2a15287dcc584e5feb3c98fec1992093238",
+      "derived_trace_sha256": "5008dad6964050baf402c1a631d59af07601e116b054ed6ef164a4f18030dfa3",
+      "observed_dispatch_types": []
+    },
+    {
+      "case": "route:paper",
+      "exit_code": 0,
+      "trace_status": "PASS",
+      "errors": [],
+      "status": "PASS",
+      "changed_files": [],
+      "route_file_evidence": [
+        "academic-research-suite/grok/skills/ars-academic-paper/SKILL.md",
+        "academic-research-suite/ars/academic-paper/WORKFLOW.md"
+      ],
+      "unexpected_calls": [],
+      "run": "ars-grok-v031-acceptance-a",
+      "raw_trace_sha256": "ec8c14f93e1548658155ecc51ccac8b82ac176370f512c784e42b1877bf9ee36",
+      "derived_trace_sha256": "50f839c893739e8029b3b6aa0093e8c5b6c7335a9fd63036b7ff3825e980ea36",
+      "observed_dispatch_types": []
+    },
+    {
+      "case": "route:reviewer",
+      "exit_code": -15,
+      "trace_status": "FAIL",
+      "errors": [
+        "缺少终止 result"
+      ],
+      "status": "TIMEOUT",
+      "changed_files": [],
+      "route_file_evidence": [],
+      "run": "ars-grok-v031-acceptance-a",
+      "raw_trace_sha256": "49d7bd5ecd249ac744ae113678cfd5dcdbf56059a57d1512a745595240164acf",
+      "derived_trace_sha256": "a5902849e151c0b4b12e5160769f6c076681665b406aa2f8051958911f8e1f48",
+      "observed_dispatch_types": []
+    },
+    {
+      "case": "route:pipeline",
+      "exit_code": 0,
+      "trace_status": "PASS",
+      "errors": [],
+      "status": "PASS",
+      "changed_files": [],
+      "route_file_evidence": [
+        "academic-research-suite/grok/skills/ars-academic-pipeline/SKILL.md",
+        "academic-research-suite/ars/academic-pipeline/WORKFLOW.md"
+      ],
+      "unexpected_calls": [],
+      "run": "ars-grok-v031-acceptance-a",
+      "raw_trace_sha256": "8ce4537bdb2bb107c51dc6e2b974ac16558f5071496339bab76ff30188c7417b",
+      "derived_trace_sha256": "989143227602be3918265b79ca92d27b5d1326eb7badb92f83886201185eeef8",
+      "observed_dispatch_types": []
+    },
+    {
+      "case": "pipeline",
+      "exit_code": -15,
+      "trace_status": "FAIL",
+      "errors": [
+        "缺少终止 result"
+      ],
+      "status": "CANCELLED",
+      "changed_files": [],
+      "note": "旧参数测试已主动停止，不能证明交接失败或通过。",
+      "run": "ars-grok-v031-acceptance-a",
+      "raw_trace_sha256": "56e9dea0bed0b76d410fa5eaa429033c19b7c3642d5d17f02dae1f7911b67efb",
+      "derived_trace_sha256": "b77a0723e0d176c472df9337e8fdf6c211cb4497dd391df75883d191270108a1",
+      "observed_dispatch_types": []
+    },
+    {
+      "case": "pipeline",
+      "exit_code": -15,
+      "trace_status": "FAIL",
+      "errors": [
+        "缺少终止 result",
+        "客户端 tool_use 缺少同父调用的 tool_result"
+      ],
+      "status": "TIMEOUT",
+      "changed_files": [
+        "phase1_blueprint/blueprint.md"
+      ],
+      "run": "ars-grok-v031-pipeline-corrected",
+      "raw_trace_sha256": "b79a855b6e77feab9770a177b862f8eb2f35d24afcd06f6da2fdc61c0e28307f",
+      "derived_trace_sha256": "a81651172e0c1fe1c6aae9c55950cc5588d9ebd55af40ec8fb8e71e795d29640",
+      "observed_dispatch_types": [
+        "ars-research-architect"
+      ],
+      "note": "仅首个Agent后台启动回执和第一阶段文件；未收到完成回执，缺第二、三阶段，写入归属未证实。",
+      "artifact_sha256": {
+        "phase1_blueprint/blueprint.md": "25854dfd06e72e61986bda89474045632bb574e2caa3a293d1171e1155363538"
+      }
+    }
+  ]
+}
