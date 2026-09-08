@@ -28,7 +28,7 @@ metadata:
 
 不要默认加载整个套件。一次只选择一个工作流，先完整读取对应的 `WORKFLOW.md`，然后只加载当前阶段需要的角色、参考资料、模板和共享契约。
 
-内部入口使用 `WORKFLOW.md` 而不是 `SKILL.md`，因此 Grok Build 只注册当前根技能，不把五个上游工作流重复暴露为独立技能。
+内部入口使用 `WORKFLOW.md`；安装器注册根入口和四个Grok包装入口，不重复注册ars/内部工作流。生成交付物前读取 `grok/output-contract.md`，以实际过程生成披露，并遵守用户输出格式。
 
 不得因为模型能够生成流畅内容，就把未提供、未执行或未核实的材料写成事实。文献、数据、实验、统计结果、机构政策和研究伦理结论都必须保留来源与核验状态。
 
@@ -85,7 +85,7 @@ Grok 安装器会把 `grok/commands/` 中的包装文件注册到 `~/.grok/comma
 
 普通单功能请求默认在当前会话内联执行。安装包同时提供四个命名空间化原生入口：`ars-deep-research`、`ars-academic-paper`、`ars-paper-reviewer`、`ars-academic-pipeline`；它们只负责更精确的发现和路由，上游正文仍以 `ars/*/WORKFLOW.md` 为唯一来源。
 
-用户显式调用 `ars-full` 或 `ars-academic-pipeline` 时，只有当前真实工具表提供 `spawn_subagent` 且能解析原生类型，才可按阶段顺序调用：Phase 1 使用 `ars-research-architect`，Phase 3 使用 `ars-synthesis`，Phase 4 或 Phase 6 使用 `ars-report-compiler`。文件已安装不证明当前会话可调度。工具或类型缺失时明确披露并按用户允许的范围回退内联；若用户要求必须原生调用则停止。禁止用终端打印、伪造回执或父Agent代写冒充调度成功。
+用户显式调用 `ars-full` 或 `ars-academic-pipeline` 时，只有当前真实工具表提供 `spawn_subagent` 且能解析原生类型，才可按阶段顺序调用：在完整流水线Stage 1的deep-research内部，Phase 1使用 `ars-research-architect`，Phase 3使用 `ars-synthesis`，Phase 4或Phase 6使用 `ars-report-compiler`。这些Phase不是完整流水线的审稿Stage 3、修订Stage 4或总结Stage 6。文件已安装不证明当前会话可调度。工具或类型缺失时明确披露并按用户允许的范围回退内联；若用户要求必须原生调用则停止。禁止用终端打印、伪造回执或父Agent代写冒充调度成功。
 
 Grok 1.0.13复验发现：直接通过 `grok --agent` 启动时，工具表仍可包含 `search_tool`、`use_tool` 和已配置的MCP工具。`mcpInheritance: none` 是子Agent继承配置，不能宣称它保证直接启动完全隔离。不得主动使用这些额外能力；涉及私有材料时必须依据真实工具表和宿主权限单独确认，不能只相信前置白名单。
 
@@ -113,7 +113,7 @@ Grok 1.0.13复验发现：直接通过 `grok --agent` 启动时，工具表仍�
 - 作者对修订路线、研究主张或新增实验的裁决；
 - 人体研究、伦理审批和机构权限；
 - 外部上传、付费调用、账号操作和凭证使用；
-- 将未核实材料提升为已核实材料；
+- 对未核实风险的接受或人工阅读声明；核验状态只能由实际证据支持，用户确认不能代替核验；
 - 最终投稿或对外发布。
 
 Hook 失败采用 Grok 的 fail-open 语义，因此 Hook 只能提供提醒或机械检查，不能单独证明引用、研究伦理、数据或论文完整性已经通过。

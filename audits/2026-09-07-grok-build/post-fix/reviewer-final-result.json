@@ -1,0 +1,11 @@
+{
+  "case": "reviewer",
+  "prompt": "请使用ARS审稿quick模式，把materials.txt当作题目与摘要材料，仅给出3条有材料依据的主要意见，总计不超过300个汉字。不要补充文献、数字总分或修改稿件，不生成文件，不联网、使用MCP或终端。",
+  "seconds": 111.69,
+  "exit_code": 0,
+  "timeout": false,
+  "trace_status": "PASS",
+  "errors": [],
+  "changed_files": [],
+  "raw_sha256": "4761cad7d387f2363e1a9d7a64e20bd31b2fee2a83c45c11448469437c284bbb"
+}

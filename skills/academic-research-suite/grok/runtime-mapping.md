@@ -13,10 +13,10 @@ Hook同时接受`run_terminal_command`和内部别名`run_terminal_cmd`；项目
 | 模式 | 默认状态 | 执行位置 | 允许的运行时行为 |
 | --- | --- | --- | --- |
 | inline | 启用 | 当前 grok-build 会话 | 读取一个工作流的 WORKFLOW.md 和当阶段所需的角色文件，在当前会话中依次执行；不自动创建子 agent。 |
-| native-phase | `ars-full` 内启用 | 三个受限原生 Agent | 只按 Phase 1、3、4/6 顺序调用 research architect、synthesis、report compiler；不并行、不递归、不授予终端或网络。 |
+| native-phase | `ars-full` 内启用 | 三个受限原生 Agent | 仅在完整Stage 1的deep-research内部按Phase 1、3、4/6顺序调用 research architect、synthesis、report compiler；不并行、不递归、不授予终端或网络。 |
 | parallel | 禁用 | 顶层会话加 spawn_subagent | 只有用户明确启用并通过确认门后，才把相互独立的研究、复核或测试阶段分派给子 agent；汇总前必须保留各自的独立产物。 |
 
-适配清单位于 grok/full-runtime-manifest.json。清单中的 default_enabled: false 针对完整运行时配置；完整运行时关闭时，根路由仍然可以按 inline 模式工作。任何子 agent、后台任务、并行评审或 Hook 行为都不能因为检测到 ARS 别名而自动开启。
+适配清单位于 grok/full-runtime-manifest.json。清单中的 default_enabled: false 针对完整运行时配置；完整运行时关闭时，根路由仍然可以按 inline 模式工作。仅显式请求完整流水线可授权其Stage 1内部的三个native-phase角色；其他子Agent、并行评审和Hook须有相应授权。自然语言仅规划流水线时停在确认点，不启动角色。
 
 ## 上游概念到 Grok 原生能力的映射
 
@@ -46,7 +46,7 @@ Hook同时接受`run_terminal_command`和内部别名`run_terminal_cmd`；项目
 | 深度研究、文献综述、系统综述、元分析、事实核验、研究问题收敛 | ars/deep-research/WORKFLOW.md | inline；只有经确认的独立问题才可进入 parallel。宽泛论文题目先走 socratic，不直接生成论文大纲。 |
 | /ars-plan、/ars-outline、/ars-abstract、/ars-lit-review、/ars-citation-check、/ars-disclosure、/ars-format-convert、/ars-revision-coach、/ars-revision、/ars-rebuttal-audit | ars/academic-paper/WORKFLOW.md | 把命令文件作为模式提示词，再按对应 mode 执行；除非用户明确要求，不修改原稿。 |
 | /ars-reviewer | ars/academic-paper-reviewer/WORKFLOW.md | 各评审视角先独立完成，再由编辑综合；不得以多数意见抹除少数或反方发现，不使用数字总分、排名或机械平均。 |
-| /ars-full | ars/academic-pipeline/WORKFLOW.md | 运行完整阶段边界和 Material Passport；默认仍是 inline。程序化引用核验、并行团队或 Hook 都需要各自的确认。 |
+| /ars-full | ars/academic-pipeline/WORKFLOW.md | 运行完整阶段边界和 Material Passport；Stage 1内部可使用三个native-phase角色，其余阶段默认inline。程序化引用核验、并行团队或 Hook 都需要各自的确认。 |
 | 实验计划、代码实验、人体研究方案、统计解释、可复现性 | ars/experiment-agent/WORKFLOW.md | 先明确输入、权限和可复现性要求；代码执行仍走 run_terminal_command，研究伦理输出不能冒充审批、法律意见或授权。 |
 | /ars-3w | ars/deep-research/WORKFLOW.md 的 three-way-scan | 只按命令配方和当前用户范围执行，来源不足时报告 unavailable 或未核实，不补造文献。 |
 | /ars-mark-read、/ars-unmark-read、/ars-cache-invalidate | ars/academic-pipeline/WORKFLOW.md 或对应命令配方 | 这是 Material Passport 或缓存状态操作；必须使用用户明确提供的范围、键和目标，不能从材料内容推断人工阅读或授权。 |
@@ -54,6 +54,11 @@ Hook同时接受`run_terminal_command`和内部别名`run_terminal_cmd`；项目
 Grok 原生还提供 /deep-research 和 /workflow 等命令。它们不是 ARS 的自动替代品：只有当用户选择 Grok 工作流并且输入、来源、确认和输出契约都与当前 ARS 路由一致时，才能作为调度外壳；否则继续使用根技能的 ARS 路由。
 
 ## 子 agent 与并行评审边界
+
+顺序调度前提供材料、资源与输出绝对路径，按当前角色限定范围。后台启动回执只记录任务ID；必须等待对应完成回执、检查文件后再启动下一阶段。保存已完成任务与产物，恢复时不重复生成。预算覆盖发现、启动、等待与最终核对；预算不足时报告已完成和待完成，不无限重试。
+
+Grok 1.0.13的Messages流可能把子调用标为父会话且parent_tool_use_id为空；不能据此推定父会话代写。需要结合独立子会话日志与tool_call_id归属。不能取得独立记录时标记归属未验证，不伪造通过。
+
 
 1. 单功能请求保持 inline；`ars-full` 仅可顺序调用 `ars-research-architect`、`ars-synthesis`、`ars-report-compiler` 三个原生阶段 Agent。
 2. 其他 parallel 调度只能由顶层会话在用户明确要求后发起，max_depth 固定为 1。子 agent 的 spawn_subagent 调用必须失败或被运行时拒绝。
@@ -80,7 +85,7 @@ Grok 的项目 Hook 需要文件夹信任，Hook 失败通常是 fail-open。适
 
 | 安全门 | 触发条件 | 确认内容 |
 | --- | --- | --- |
-| 完整运行时启用 | 打开 parallel、子 agent、后台调度或本适配器 Hook | 启用范围、任务目标、并发对象、权限、隔离方式和失败处理。 |
+| 完整运行时启用 | 打开额外parallel、非native-phase子Agent或本适配器Hook | 启用范围、任务目标、并发对象、权限、隔离方式和失败处理。 |
 | 外部 API 或私有材料传输 | 需要凭证、费用、上传未发表材料的外部服务，或远程 Hook | 目标服务、上传内容、是否包含私有材料、凭证来源和可接受的失败状态。普通公开网页检索无需额外确认。 |
 | 跨模型或内容上传 | 任何把手稿、审稿意见、私有笔记或全文发给外部模型 | 服务商、模型、准确内容类别、最小化后的传输范围和用户明确同意；无同意不得上传。 |
 | 覆盖原件或改变持久状态 | 用户没有明确要求时修改原稿、Passport、缓存或其他既有状态 | 精确文件、写入目的、是否可恢复以及是否先备份。创建用户已要求的交付文件不重复确认。 |

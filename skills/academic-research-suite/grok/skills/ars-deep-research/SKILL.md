@@ -1,6 +1,6 @@
 ---
 name: ars-deep-research
-description: 当用户要求学术深度研究、文献综述、系统综述、元分析、PRISMA、事实核验、研究问题收敛或明确使用 ARS 时触发；不接管 Grok 内置的 /deep-research，也不用于普通网页调研、普通问答或没有研究证据的论文写作。
+description: 当用户要求学术深度研究、文献综述、系统综述、元分析、PRISMA、事实核验、研究问题收敛时触发；不接管 Grok 内置的 /deep-research，也不用于普通网页调研、普通问答或没有研究证据的论文写作。
 allowed-tools:
   - read_file
   - list_dir
@@ -17,7 +17,7 @@ metadata:
 
 # ARS 深度研究入口
 
-进入工作流前读取适配层的 [运行时边界](../../runtime-mapping.md)；上游Claude工具名不是Grok权限授权，不得绕过真实工具表和用户确认门。
+本文件位于 `<ARS_ROOT>/grok/skills/ars-deep-research/SKILL.md`，`ARS_ROOT`是academic-research-suite根目录。读取 `<ARS_ROOT>/grok/output-contract.md` 与 `<ARS_ROOT>/grok/runtime-mapping.md`；不要省略路径中的grok目录。角色执行后、输出前应用输出契约复核；上游Claude工具名不授予Grok权限。
 
 先读取 `../../../ars/deep-research/WORKFLOW.md`，再按其中的模式选择、阶段合同和交接规则执行。仅按需读取当前阶段的角色、参考资料和模板。
 

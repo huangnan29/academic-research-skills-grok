@@ -1,0 +1,11 @@
+{
+  "case": "report",
+  "prompt": "读取materials.txt，只在答复中写一份约200字的合成材料分析报告，保留适用的必要记录与披露；不要生成文件、联网、使用MCP或终端，不要继续其他阶段。",
+  "seconds": 90.01,
+  "exit_code": 0,
+  "timeout": false,
+  "trace_status": "PASS",
+  "errors": [],
+  "changed_files": [],
+  "raw_sha256": "1d6ca9a532f228f59c96b09cbed6e0dc7b89eb76e4ab57a4da4f5b0ec3d41892"
+}

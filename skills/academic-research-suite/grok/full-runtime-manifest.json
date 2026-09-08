@@ -39,7 +39,10 @@
       "description": "当前会话读取工作流入口和所需角色提示词，按阶段顺序执行"
     },
     "native-phase": {
-      "enabled_by_default_for": ["ars-full", "ars-academic-pipeline"],
+      "enabled_by_default_for": [
+        "ars-full",
+        "ars-academic-pipeline"
+      ],
       "execution_surface": "spawn_subagent",
       "spawn_subagent": true,
       "parallel": false,
@@ -50,7 +53,7 @@
         "ars-report-compiler"
       ],
       "fallback": "inline_with_disclosure",
-      "description": "完整流水线按Phase 1、3、4/6顺序调用三个受限原生Agent"
+      "description": "完整流水线Stage 1内deep-research的Phase 1、3、4/6角色；不是整条流水线的Stage 3、4、6"
     },
     "parallel": {
       "enabled_by_default": false,
@@ -160,13 +163,13 @@
     "Agent": {
       "grok_tool": "spawn_subagent",
       "operation": "delegate",
-      "default_policy": "用户明确要求并行或委派、parallel 模式和深度 1 均满足时允许",
+      "default_policy": "显式完整流水线Stage 1可顺序调度三个native-phase角色；额外并行或委派需明确授权；最大深度1",
       "least_privilege": true
     },
     "Task": {
       "grok_tool": "spawn_subagent",
       "operation": "delegate",
-      "default_policy": "用户明确要求并行或委派、parallel 模式和深度 1 均满足时允许",
+      "default_policy": "显式完整流水线Stage 1可顺序调度三个native-phase角色；额外并行或委派需明确授权；最大深度1",
       "least_privilege": true
     },
     "AskUserQuestion": {
@@ -376,13 +379,15 @@
     "failure_behavior": "fail-open，除非 Hook 明确返回 deny 或 block",
     "integrity_gate_policy": "Hook 不能替代 ARS 的引用、证据、人工确认或学术诚信闸门",
     "input_convention": "Grok Hook 输入使用 camelCase 字段和真实工具名",
-    "installed_by_adapter": ["PreToolUse"],
+    "installed_by_adapter": [
+      "PreToolUse"
+    ],
     "session_start_announcement": "unavailable_in_grok_1.0.5_stdout_ignored"
   },
   "confirmation_gates": {
     "enable_full_runtime": {
       "required": true,
-      "trigger": "启用 parallel、子 agent、后台调度或本适配器 Hook",
+      "trigger": "启用额外parallel、非native-phase子Agent或本适配器Hook",
       "default_without_confirmation": "stay_inline",
       "must_confirm": [
         "启用范围",
@@ -393,7 +398,7 @@
     },
     "parallel_subagents": {
       "required": true,
-      "trigger": "调用 spawn_subagent 或使用 parallel 模式",
+      "trigger": "非已授权native-phase的额外spawn_subagent或parallel模式",
       "default_without_confirmation": "deny",
       "must_confirm": [
         "子任务边界",

@@ -137,7 +137,13 @@ class 原生Agent文件测试(unittest.TestCase):
                 _, 正文 = 解析前置元数据(路径.read_text(encoding="utf-8"))
                 上游头部, 上游正文 = 解析前置元数据(上游路径.read_text(encoding="utf-8"))
                 self.assertEqual(上游头部["name"], 配置["上游名称"])
-                self.assertIn(上游正文.strip(), 正文)
+                if 名称 == "ars-report-compiler":
+                    # 固定披露是已证实会伪造过程的上游缺陷；只允许这一节偏离。
+                    def 去除披露(文本):
+                        return re.sub(r"(?s)(## AI Disclosure Statement \(Mandatory\)).*?(?=## Output Format)", r"\1\n", 文本)
+                    self.assertIn(去除披露(上游正文).strip(), 去除披露(正文))
+                else:
+                    self.assertIn(上游正文.strip(), 正文)
                 for 标记 in 配置["阶段标记"] + 配置["同步标记"]:
                     self.assertIn(标记, 正文)
                 self.assertIn("Grok Build Native-Agent Boundary", 正文)

@@ -2,7 +2,11 @@
   "name": "academic-research-suite",
   "adapter_version": "0.3.1",
   "generated_for": "grok-build",
-  "generated_date": "2026-08-30",
+  "generated_date": "2026-09-07",
+  "adapter_corrections": {
+    "output_contract": "grok/output-contract.md",
+    "report_compiler_upstream_divergence": "仅替换AI Disclosure Statement (Mandatory)节的固定完成模板，按实际活动披露；ars来源保持不变。"
+  },
   "minimum_tested_grok_version": "1.0.5",
   "runtime_revalidation": {
     "grok_version": "1.0.13",

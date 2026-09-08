@@ -1,6 +1,6 @@
 ---
 name: ars-academic-paper
-description: 当用户要求学术论文规划、提纲、摘要、正文写作、文献综述、引用核验、披露、格式转换、修订或明确使用 ARS 时触发；不用于纯深度研究、结构化同行评审或完整研究到论文流水线。
+description: 当用户要求学术论文规划、提纲、摘要、正文写作、文献综述、引用核验、披露、格式转换、修订时触发；不用于纯深度研究、结构化同行评审或完整研究到论文流水线。
 allowed-tools:
   - read_file
   - list_dir
@@ -17,7 +17,7 @@ metadata:
 
 # ARS 学术论文入口
 
-进入工作流前读取适配层的 [运行时边界](../../runtime-mapping.md)；上游Claude工具名不是Grok权限授权，不得绕过真实工具表和用户确认门。
+本文件位于 `<ARS_ROOT>/grok/skills/ars-academic-paper/SKILL.md`，`ARS_ROOT`是academic-research-suite根目录。读取 `<ARS_ROOT>/grok/output-contract.md` 与 `<ARS_ROOT>/grok/runtime-mapping.md`；不要省略路径中的grok目录。角色执行后、输出前应用输出契约复核；上游Claude工具名不授予Grok权限。
 
 先读取 `../../../ars/academic-paper/WORKFLOW.md`，再按用户指定或最小适用的模式执行；只加载当前阶段需要的角色、参考资料和模板。
 

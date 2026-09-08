@@ -154,6 +154,15 @@ class 运行时验收测试(unittest.TestCase):
         files = {"phase1_blueprint/blueprint.md": "a", "phase3_analysis/synthesis.md": "b", "phase4_report/report.md": "c"}
         self.assertEqual(runner.assess("pipeline", 生成轨迹(calls), {}, files, 0)["status"], "FAIL")
 
+    def test_空父标识写入需要归属复核不能推定父代写(self):
+        calls = [("spawn_subagent", {"subagent_type": agent}) for agent in runner.AGENTS]
+        calls.append(("search_replace", {"file_path": "phase4_report/report.md"}))
+        files = {"phase1_blueprint/blueprint.md": "a", "phase3_analysis/synthesis.md": "b", "phase4_report/report.md": "c"}
+        result = runner.assess("pipeline", 生成轨迹(calls), {}, files, 0)
+        self.assertEqual(result["status"], "REVIEW_REQUIRED")
+        self.assertEqual(result["write_attribution"], "UNVERIFIED")
+        self.assertNotIn("parent_write_calls", result)
+
     def test_权限初始表正确但出现禁用调用仍失败(self):
         trace = 生成轨迹([("run_terminal_command", {"command": "printf ARS_TERMINAL_PROBE"})], runner.ALLOWED_AGENT_TOOLS)
         result = runner.assess("permission:ars-synthesis", trace, {}, {}, 0)

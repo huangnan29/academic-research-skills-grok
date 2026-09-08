@@ -104,10 +104,12 @@ def assess(case: str, trace: dict, before: dict, after: dict, exit_code: int) ->
     result["successful_dispatches"] = dispatched
     result["required_artifacts"] = {p: after.get(p) for p in required_files}
     # 调度和文件均必要，仍需人工复核产物与子会话读取证据才认定完整交接通过。
-    parent_writes = [c["id"] for c in calls if c.get("parent_tool_use_id") is None and c["name"] in {"search_replace", "write", "run_terminal_command", "run_terminal_cmd"}]
-    result["parent_write_calls"] = parent_writes
+    # Grok会把子调用扁平化到父流；空父标识不能确定实际写入者。
+    unattributed_writes = [c["id"] for c in calls if c.get("parent_tool_use_id") is None and c["name"] in {"search_replace", "write", "run_terminal_command", "run_terminal_cmd"}]
+    result["unattributed_write_calls"] = unattributed_writes
+    result["write_attribution"] = "UNVERIFIED" if unattributed_writes else "NO_UNATTRIBUTED_WRITES"
     unexpected_files = set(result["changed_files"]) - set(required_files)
-    if complete and dispatched == list(AGENTS) and all(p in after for p in required_files) and not parent_writes and not unexpected_files:
+    if complete and dispatched == list(AGENTS) and all(p in after for p in required_files) and not unexpected_files:
         result["status"] = "REVIEW_REQUIRED"
     return result
 

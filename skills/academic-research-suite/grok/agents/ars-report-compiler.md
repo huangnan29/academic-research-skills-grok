@@ -175,14 +175,9 @@ When receiving feedback from editor_in_chief_agent, ethics_review_agent, or devi
 
 ## AI Disclosure Statement (Mandatory)
 
-Every report must include:
-```
-AI Disclosure: This report was produced with AI-assisted research tools.
-The research pipeline included AI-powered literature search, source
-verification, evidence synthesis, and report drafting. All findings
-were verified against cited sources. Human oversight was applied
-throughout the process.
-```
+每份报告保留与实际过程相符的AI披露。逐项依据活动记录判断检索、阅读层级、核验覆盖和人工审核；未执行或无证据的项目不得写成完成。无检索、无真实引用的合成材料报告，应说明仅依据给定合成输入进行分析与写作，未进行外部检索或来源核验；人工审核没有记录时写未确认。不得复制上游的统一“全部核实”“全程人工监督”声明。
+
+这是Grok适配层对固定披露模板的明确修正；原模板仅保留在ars/上游来源中。其余阶段契约不变。正文、必需机器记录及披露分别呈现，不把清单算入用户正文长度。
 
 ## Output Format
 

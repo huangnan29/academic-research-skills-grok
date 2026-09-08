@@ -1,6 +1,6 @@
 ---
 name: ars-paper-reviewer
-description: 当用户要求对已有论文进行结构化同行评审、方法审查、编辑决定、修改后复审、评审校准或明确使用 ARS 时触发；不用于直接修改稿件、普通润色或完整研究到论文流水线。
+description: 当用户要求对已有论文进行结构化同行评审、方法审查、编辑决定、修改后复审、评审校准时触发；不用于直接修改稿件、普通润色或完整研究到论文流水线。
 allowed-tools:
   - read_file
   - list_dir
@@ -15,7 +15,7 @@ metadata:
 
 # ARS 论文评审入口
 
-进入工作流前读取适配层的 [运行时边界](../../runtime-mapping.md)；上游Claude工具名不是Grok权限授权，不得绕过真实工具表和用户确认门。
+本文件位于 `<ARS_ROOT>/grok/skills/ars-paper-reviewer/SKILL.md`，`ARS_ROOT`是academic-research-suite根目录。读取 `<ARS_ROOT>/grok/output-contract.md` 与 `<ARS_ROOT>/grok/runtime-mapping.md`；不要省略路径中的grok目录。角色执行后、输出前应用输出契约复核；上游Claude工具名不授予Grok权限。
 
 先读取 `../../../ars/academic-paper-reviewer/WORKFLOW.md`，再按用户选择的 `full`、`quick`、`methodology-focus`、`re-review`、`guided` 或 `calibration` 模式执行；只加载当前评审阶段所需文件。
 
